@@ -9,69 +9,63 @@ use App\Models\Admin;
 use App\Models\Contractor;
 use App\Models\User;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Crypt;
-use Inertia\Response;
-
 
 class AdminController extends Controller
 {
-    
-public function login(Request $request) 
-{
-    $request->validate([
-        'email' => ['required', 'email'],
-        'password' => ['required'],
-    ]);
+    // Admin login
+    public function login(Request $request) 
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
 
-    $admin = Admin::where('email', $request->email)->first();
+        $admin = Admin::where('email', $request->email)->first();
 
-    if (!$admin || !Hash::check($request->password, $admin->password)) {
-        throw ValidationException::withMessages([
-            'email' => 'Invalid admin credentials.',
+        if (!$admin || !Hash::check($request->password, $admin->password)) {
+            throw ValidationException::withMessages([
+                'email' => 'Invalid admin credentials.',
+            ]);
+        }
+
+        session(['admin_id' => $admin->id]);
+
+        return Inertia::location(route('admin.dashboard'));
+    }
+
+    // Admin dashboard
+    public function dashboard()
+    {
+        return Inertia::render('Admin/Dashboard', [
+            'pendingContractors' => Contractor::where('is_approved', false)->get(),
+            'approvedContractors' => Contractor::where('is_approved', true)->get(),
+            'csrf_token' => csrf_token(),
         ]);
     }
 
-    session(['admin_id' => $admin->id]);
+    // Create ParkX employee
+    public function createParkxUser(Request $request)
+    {
+        \Log::info('👤 Creating Parkx user', $request->all());
 
-    // ✅ Inertia-style redirect
-    return Inertia::location(route('admin.dashboard'));
-}
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
 
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+        ]);
 
-    // ✅ The missing dashboard method
-public function dashboard()
-{
-    return Inertia::render('Admin/Dashboard', [
-        'pendingContractors' => \App\Models\Contractor::where('is_approved', false)->get(),
-        'csrf_token' => csrf_token(),
-    ]);
-}
+        \Log::info('✅ User created:', $user->toArray());
 
-    // ✅ Create ParkX employee
- public function createParkxUser(Request $request)
-{
-    \Log::info('👤 Creating Parkx user', $request->all());
+        return back()->with('success', 'User created successfully.');
+    }
 
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email',
-        'password' => 'required|string|min:6|confirmed',
-    ]);
-
-    $user = \App\Models\User::create([
-        'name' => $validated['name'],
-        'email' => $validated['email'],
-        'password' => bcrypt($validated['password']),
-    ]);
-
-    \Log::info('✅ User created:', $user->toArray());
-
-    return back()->with('success', 'User created successfully.');
-}
-
-
-
-    // ✅ Approve contractor
+    // Approve contractor
     public function approveContractor($id)
     {
         $contractor = Contractor::findOrFail($id);
@@ -81,12 +75,21 @@ public function dashboard()
         return back()->with('success', 'Contractor approved.');
     }
 
-    // ✅ Reject contractor
+    // Reject contractor
     public function rejectContractor($id)
     {
         $contractor = Contractor::findOrFail($id);
         $contractor->delete();
 
         return back()->with('success', 'Contractor rejected and deleted.');
+    }
+
+    // ✅ Delete an approved contractor
+    public function deleteApprovedContractor($id)
+    {
+        $contractor = Contractor::where('is_approved', true)->findOrFail($id);
+        $contractor->delete();
+
+        return back()->with('success', 'Contractor account deleted.');
     }
 }

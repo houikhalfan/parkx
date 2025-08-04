@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 
+
 export default function AdminDashboard() {
-  const { pendingContractors = [], csrf_token } = usePage().props;
+  const { pendingContractors = [], approvedContractors = [], csrf_token } = usePage().props;
   const [activeTab, setActiveTab] = useState('parkx');
 
   const navItems = [
@@ -40,9 +41,7 @@ export default function AdminDashboard() {
         <div className="px-4 py-4 border-t">
           <form method="POST" action="/admin/logout">
             <input type="hidden" name="_token" value={csrf_token} />
-            <button className="w-full py-2 text-sm text-red-600 hover:underline">
-              Logout
-            </button>
+            <button className="w-full py-2 text-sm text-red-600 hover:underline">Logout</button>
           </form>
         </div>
       </aside>
@@ -57,49 +56,21 @@ export default function AdminDashboard() {
               <input type="hidden" name="_token" value={csrf_token} />
               <div>
                 <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Full Name"
-                  className="w-full px-4 py-2 border rounded"
-                  required
-                />
+                <input type="text" name="name" placeholder="Full Name" className="w-full px-4 py-2 border rounded" required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  className="w-full px-4 py-2 border rounded"
-                  required
-                />
+                <input type="email" name="email" placeholder="Email" className="w-full px-4 py-2 border rounded" required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  className="w-full px-4 py-2 border rounded"
-                  required
-                />
+                <input type="password" name="password" placeholder="Password" className="w-full px-4 py-2 border rounded" required />
               </div>
               <div>
-  <label className="block text-sm font-medium mb-1">Confirm Password</label>
-  <input
-    type="password"
-    name="password_confirmation"
-    placeholder="Confirm Password"
-    className="w-full px-4 py-2 border rounded"
-    required
-  />
-</div>
-
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
+                <label className="block text-sm font-medium mb-1">Confirm Password</label>
+                <input type="password" name="password_confirmation" placeholder="Confirm Password" className="w-full px-4 py-2 border rounded" required />
+              </div>
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 Create User
               </button>
             </form>
@@ -113,7 +84,7 @@ export default function AdminDashboard() {
             {pendingContractors.length === 0 ? (
               <p className="text-gray-600">No pending contractor requests.</p>
             ) : (
-              <table className="min-w-full bg-white shadow rounded">
+              <table className="min-w-full bg-white shadow rounded mb-10">
                 <thead>
                   <tr className="bg-gray-100 text-left text-sm uppercase text-gray-600">
                     <th className="px-4 py-2">Name</th>
@@ -136,6 +107,46 @@ export default function AdminDashboard() {
                         <form method="POST" action={`/admin/contractors/${c.id}/reject`} className="inline">
                           <input type="hidden" name="_token" value={csrf_token} />
                           <button type="submit" className="text-red-600 hover:underline">Reject</button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* ✅ Approved Contractors */}
+            <h2 className="text-2xl font-semibold mb-4">Approved Contractors</h2>
+            {approvedContractors.length === 0 ? (
+              <p className="text-gray-600">No approved contractors.</p>
+            ) : (
+              <table className="min-w-full bg-white shadow rounded">
+                <thead>
+                  <tr className="bg-gray-100 text-left text-sm uppercase text-gray-600">
+                    <th className="px-4 py-2">Name</th>
+                    <th className="px-4 py-2">Email</th>
+                    <th className="px-4 py-2">Company</th>
+                    <th className="px-4 py-2">Phone</th>
+                    <th className="px-4 py-2">Role</th>
+                    <th className="px-4 py-2">Created</th>
+                    <th className="px-4 py-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approvedContractors.map((c) => (
+                    <tr key={c.id} className="border-t text-sm">
+                      <td className="px-4 py-2">{c.name}</td>
+                      <td className="px-4 py-2">{c.email}</td>
+                      <td className="px-4 py-2">{c.company_name || '—'}</td>
+                      <td className="px-4 py-2">{c.phone || '—'}</td>
+                      <td className="px-4 py-2">{c.role || '—'}</td>
+                      <td className="px-4 py-2">{new Date(c.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-2">
+                        <form method="POST" action={`/admin/contractors/${c.id}/delete`} onSubmit={(e) => {
+                          if (!confirm("Are you sure you want to delete this contractor?")) e.preventDefault();
+                        }}>
+                          <input type="hidden" name="_token" value={csrf_token} />
+                          <button type="submit" className="text-red-600 hover:underline">Delete</button>
                         </form>
                       </td>
                     </tr>

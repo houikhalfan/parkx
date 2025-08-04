@@ -2,47 +2,53 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'vods_quota', // 👈 Ajout du champ quota
+        'vods_target_per_month',
+
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'vods_quota' => 'integer', // 👈 Cast
         ];
     }
+    
+    public function vods()
+{
+    return $this->hasMany(Vods::class);
+}
+
+// Nombre de VODS qu'il reste à faire (si l'admin a défini une cible)
+public function getVodsToCompleteAttribute()
+{
+    $target = $this->vods_target_per_month ?? 0;
+
+    $doneThisMonth = $this->vods()
+        ->whereMonth('created_at', now()->month)
+        ->whereYear('created_at', now()->year)
+        ->count();
+
+    return max(0, $target - $doneThisMonth);
+}
+
 }

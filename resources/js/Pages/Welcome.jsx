@@ -43,15 +43,14 @@ export default function Welcome() {
 
   const handleLogin = (e) => {
     e.preventDefault();
+    const loginData = {
+      email: loginForm.data.email,
+      password: loginForm.data.password,
+      type: activeTab,
+      name: activeTab === 'contractor' ? loginForm.data.email || 'Contractor' : undefined
+    };
 
-    loginForm.setData('type', activeTab);
-
-    // ✅ Laravel expects name for contractors during login
-    if (activeTab === 'contractor') {
-      loginForm.setData('name', loginForm.data.email || 'Contractor');
-    }
-
-    loginForm.post('/login', {
+    router.post('/login', loginData, {
       onSuccess: () => router.visit('/dashboard'),
       onError: (errors) => {
         console.error('❌ Login error:', errors);
@@ -74,98 +73,96 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
-      <div className="w-full max-w-md bg-white flex flex-col relative">
-        <div className="p-8 pb-4">
-          <div className="flex items-center justify-between mb-8">
-            <div className="bg-gray-100 px-4 py-2 rounded-full">
-              <span className="text-gray-700 font-medium">ParkX</span>
-            </div>
-          </div>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left image + welcome message */}
+      <div
+        className="md:w-2/3 w-full h-64 md:h-auto bg-cover bg-center relative"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center text-white p-6">
+          <h1 className="text-4xl font-bold mb-4">Bienvenue sur HSE ParkX</h1>
+          <p className="text-lg max-w-xl">
+            Plateforme de supervision et de signalement pour un environnement de travail plus sûr.
+          </p>
+        </div>
+      </div>
+
+      {/* Right login/signup form */}
+      <div className="md:w-1/3 w-full bg-white flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+        <div className="mb-4 text-center">
+  <img src="/images/logo.png" alt="logo" className="mx-auto h-34 w-auto mb-2" />
+  <h2 className="text-2xl font-bold mb-1">Connexion</h2>
+  <p className="text-gray-500 text-sm">Connectez-vous en tant qu'utilisateur ou administrateur</p>
+</div>
+
+
 
           <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
             <button
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${activeTab === 'parkx' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('parkx')}>ParkX</button>
+              onClick={() => setActiveTab('parkx')}
+            >
+              ParkX
+            </button>
+
             <button
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${activeTab === 'contractor' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('contractor')}>Contractor</button>
+              onClick={() => setActiveTab('contractor')}
+            >
+              Contractant
+            </button>
           </div>
 
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {showSignup && activeTab === 'contractor' ? 'Contractor Signup' : 'Welcome back'}
-            </h1>
-            <p className="text-gray-600 text-sm">
-              {showSignup && activeTab === 'contractor' ? 'Fill in details to request access' : 'Sign in to your account'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex-1 px-8 pb-8 overflow-y-auto">
           {flashMessage && (
-            <div className="mb-4 px-4 py-2 text-green-800 bg-green-100 border border-green-200 rounded">
+            <div className="mb-4 px-4 py-2 text-green-800 bg-green-100 border border-green-200 rounded text-center">
               {flashMessage}
             </div>
           )}
 
-          {/* ParkX Login */}
-          {activeTab === 'parkx' && !showSignup && (
+          {!showSignup ? (
             <form onSubmit={handleLogin} className="space-y-4">
-              {loginForm.errors.email && <div className="text-red-600 text-sm">{loginForm.errors.email}</div>}
-              <InputField label="Email" type="email" value={loginForm.data.email} onChange={(val) => loginForm.setData('email', val)} />
-              <InputField label="Password" value={loginForm.data.password} onChange={(val) => loginForm.setData('password', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
-              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg">Sign in</button>
+              <InputField label="Nom d'utilisateur" type="email" value={loginForm.data.email} onChange={(val) => loginForm.setData('email', val)} />
+              <InputField label="Mot de passe" value={loginForm.data.password} onChange={(val) => loginForm.setData('password', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+              <button type="submit" className="w-full py-3 bg-orange-500 text-white rounded-lg">Se connecter</button>
             </form>
-          )}
-
-          {/* Contractor Login */}
-          {activeTab === 'contractor' && !showSignup && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              {loginForm.errors.email && <div className="text-red-600 text-sm">{loginForm.errors.email}</div>}
-              <InputField label="Email" type="email" value={loginForm.data.email} onChange={(val) => loginForm.setData('email', val)} />
-              <InputField label="Password" value={loginForm.data.password} onChange={(val) => loginForm.setData('password', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
-              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg">Sign in</button>
-              <p className="text-sm text-center mt-4">Don't have an account? <button type="button" onClick={() => setShowSignup(true)} className="text-blue-500">Sign up</button></p>
-            </form>
-          )}
-
-          {/* Contractor Signup */}
-          {activeTab === 'contractor' && showSignup && (
+          ) : (
             <form onSubmit={handleSignup} className="space-y-4">
-              {signupForm.errors.name && <div className="text-red-600 text-sm">{signupForm.errors.name}</div>}
-              <InputField label="Full Name" value={signupForm.data.name} onChange={(val) => signupForm.setData('name', val)} />
-
-              {signupForm.errors.email && <div className="text-red-600 text-sm">{signupForm.errors.email}</div>}
+              <InputField label="Nom complet" value={signupForm.data.name} onChange={(val) => signupForm.setData('name', val)} />
               <InputField label="Email" type="email" value={signupForm.data.email} onChange={(val) => signupForm.setData('email', val)} />
-
-              {signupForm.errors.password && <div className="text-red-600 text-sm">{signupForm.errors.password}</div>}
-              <InputField label="Password" value={signupForm.data.password} onChange={(val) => signupForm.setData('password', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
-
-              <InputField label="Confirm Password" value={signupForm.data.password_confirmation} onChange={(val) => signupForm.setData('password_confirmation', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
-
-              <InputField label="Phone Number" value={signupForm.data.phone} onChange={(val) => signupForm.setData('phone', val)} />
-              <InputField label="Company Name" value={signupForm.data.company_name} onChange={(val) => signupForm.setData('company_name', val)} />
-
-              {signupForm.errors.role && <div className="text-red-600 text-sm">{signupForm.errors.role}</div>}
+              <InputField label="Mot de passe" value={signupForm.data.password} onChange={(val) => signupForm.setData('password', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+              <InputField label="Confirmer le mot de passe" value={signupForm.data.password_confirmation} onChange={(val) => signupForm.setData('password_confirmation', val)} showToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+              <InputField label="Téléphone" value={signupForm.data.phone} onChange={(val) => signupForm.setData('phone', val)} />
+              <InputField label="Entreprise" value={signupForm.data.company_name} onChange={(val) => signupForm.setData('company_name', val)} />
               <div>
-                <label className="text-sm text-gray-600 font-medium">Role</label>
+                <label className="text-sm text-gray-600 font-medium">Rôle</label>
                 <select value={signupForm.data.role} onChange={(e) => signupForm.setData('role', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2">
-                  <option value="">Select Role</option>
+                  <option value="">Sélectionner un rôle</option>
                   <option value="manager">Manager</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="worker">Worker</option>
+                  <option value="supervisor">Superviseur</option>
+                  <option value="worker">Ouvrier</option>
                 </select>
               </div>
-
-              <button type="submit" className="w-full py-3 bg-yellow-500 text-white rounded-lg">Request Access</button>
-              <p className="text-sm text-center mt-4">Already have an account? <button type="button" onClick={() => setShowSignup(false)} className="text-blue-500">Sign in</button></p>
+              <button type="submit" className="w-full py-3 bg-yellow-500 text-white rounded-lg">Demander un accès</button>
             </form>
           )}
+
+          <div className="mt-4 text-center text-sm">
+            {showSignup ? (
+              <>Déjà inscrit ? <button onClick={() => setShowSignup(false)} className="text-blue-500">Se connecter</button></>
+            ) : (
+              activeTab === 'contractor' && (
+                <>Pas encore de compte ? <button onClick={() => setShowSignup(true)} className="text-blue-500">Créer un compte</button></>
+              )
+            )}
+          </div>
+
+          <p className="text-xs text-gray-400 text-center mt-6">
+            ParkX- Parcs Industiels Durables.
+
+          </p>
         </div>
       </div>
-
-      <div className="hidden md:block flex-1 bg-cover bg-center" style={{ backgroundImage: `url(${backgroundImage})` }} />
     </div>
   );
 }

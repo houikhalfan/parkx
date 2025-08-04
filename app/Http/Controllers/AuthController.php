@@ -8,12 +8,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
         $type = $request->input('type');
+        \Log::debug('🔍 Login request received', ['type' => $type, 'email' => $request->email]);
+
+        if (!in_array($type, ['contractor', 'parkx'])) {
+            \Log::warning('⚠️ Invalid login type', ['type' => $type]);
+            throw ValidationException::withMessages([
+                'type' => 'Invalid user type specified.',
+            ]);
+        }
 
         $request->validate([
             'email' => ['required', 'email'],
@@ -34,17 +43,16 @@ class AuthController extends Controller
             }
 
             if (!$contractor->is_approved) {
-                \Log::warning('⚠️ Contractor account not approved yet.', ['contractor_id' => $contractor->id]);
+                \Log::warning('⚠️ Contractor account not approved.', ['contractor_id' => $contractor->id]);
                 throw ValidationException::withMessages([
                     'email' => 'Your account is pending admin approval.',
                 ]);
             }
 
             session(['contractor_id' => $contractor->id]);
-
             \Log::info('✅ Contractor logged in successfully.', ['contractor_id' => $contractor->id]);
 
-            return redirect()->route('dashboard'); // Or route('contractor.dashboard') if using separate view
+            return redirect()->route('dashboard'); // Adjust this if you have a contractor dashboard
         }
 
         // ParkX user login
@@ -56,7 +64,6 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
-
         \Log::info('✅ ParkX user logged in.', ['user_id' => Auth::id()]);
 
         return redirect()->intended('/dashboard');
@@ -75,8 +82,6 @@ class AuthController extends Controller
             'role' => 'nullable|string|max:100',
         ]);
 
-        \Log::info('✅ Contractor registration validation passed');
-
         $contractor = Contractor::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -87,7 +92,7 @@ class AuthController extends Controller
             'is_approved' => false,
         ]);
 
-        \Log::info('✅ Contractor created:', $contractor->toArray());
+        \Log::info('✅ Contractor registered', ['contractor_id' => $contractor->id]);
 
         return back()->with('message', 'Registration submitted. Admin approval is required.');
     }
