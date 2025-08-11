@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Contractor;
+use App\Models\Vod; // ✅ pour compter les VODs du mois courant (created_at)
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -52,7 +53,7 @@ class AuthController extends Controller
             session(['contractor_id' => $contractor->id]);
             \Log::info('✅ Contractor logged in successfully.', ['contractor_id' => $contractor->id]);
 
-            return redirect()->route('dashboard'); // Adjust this if you have a contractor dashboard
+            return redirect()->route('dashboard');
         }
 
         // ParkX user login
@@ -63,10 +64,43 @@ class AuthController extends Controller
             ]);
         }
 
+        // ✅ Flash quota basé sur la date d’émission (created_at)
+        $user  = Auth::user();
+        $quota = (int)($user->vods_quota ?? 0);
+
+        $start = now()->startOfMonth()->startOfDay();
+        $end   = now()->endOfMonth()->endOfDay();
+
+        $submitted = Vod::where('user_id', $user->id)
+            ->whereBetween('created_at', [$start, $end])
+            ->count();
+
+        $remaining = max($quota - $submitted, 0);
+        $daysLeft  = max((int) now()->startOfDay()->diffInDays($end, false), 0);
+
+        if ($quota > 0) {
+            if ($remaining > 0) {
+                $request->session()->flash(
+                    'success',
+                    "Il vous reste {$remaining} VOD(s) à soumettre ce mois-ci. Jours restants : {$daysLeft}."
+                );
+            } else {
+                $next = now()->startOfMonth()->addMonth()->format('d/m/Y');
+                $request->session()->flash(
+                    'success',
+                    "Quota mensuel atteint. Le formulaire VODS est bloqué jusqu’au {$next}."
+                );
+            }
+        }
+
         $request->session()->regenerate();
         \Log::info('✅ ParkX user logged in.', ['user_id' => Auth::id()]);
 
-        return redirect()->intended('/dashboard');
+        if (Auth::check()) {
+    Auth::user()->forceFill(['last_login_at' => now()])->save();
+}
+
+return redirect()->intended('/dashboard');
     }
 
     public function contractorRegister(Request $request)

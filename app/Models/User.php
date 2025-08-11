@@ -35,7 +35,7 @@ class User extends Authenticatable
     
     public function vods()
 {
-    return $this->hasMany(Vods::class);
+    return $this->hasMany(Vod::class);
 }
 
 // Nombre de VODS qu'il reste à faire (si l'admin a défini une cible)

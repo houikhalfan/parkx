@@ -1,14 +1,22 @@
 import React from 'react';
 import { usePage } from '@inertiajs/react';
 
-export default function VodsHistory() {
-  const { vods = [] } = usePage().props;
+export default function VodsHistory({ vods: vodsProp }) {
+  const { vods: vodsFromPage = [] } = usePage().props || {};
+  const vods = vodsProp ?? vodsFromPage; // prefer prop if provided
+
+  const formatEntreprise = (val) => {
+    if (!val) return '';
+    if (Array.isArray(val)) return val.join(', ');
+    try { const arr = JSON.parse(val); return Array.isArray(arr) ? arr.join(', ') : String(val); }
+    catch { return String(val); }
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
       <h2 className="text-2xl font-semibold mb-6">Historique des VODS</h2>
 
-      {vods.length === 0 ? (
+      {(!vods || vods.length === 0) ? (
         <p className="text-gray-600">Aucun VODS rempli pour le moment.</p>
       ) : (
         <table className="w-full bg-white shadow rounded">
@@ -24,14 +32,13 @@ export default function VodsHistory() {
           <tbody>
             {vods.map((vod) => (
               <tr key={vod.id} className="border-t text-sm">
-                <td className="px-4 py-2">{vod.date}</td>
+                <td className="px-4 py-2">{vod.date ? new Date(vod.date).toLocaleDateString('fr-FR') : ''}</td>
                 <td className="px-4 py-2">{vod.projet}</td>
                 <td className="px-4 py-2">{vod.activite}</td>
-                <td className="px-4 py-2">{vod.entrepriseObservee}</td>
-                <td className="px-4 py-2">
-                  <a href={`/vods/${vod.id}`} className="text-blue-500 hover:underline">
-                    Voir détails
-                  </a>
+                <td className="px-4 py-2">{formatEntreprise(vod.entreprise_observee)}</td>
+                <td className="px-4 py-2 space-x-3">
+                  <a href={`/vods/${vod.id}/pdf`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Voir PDF</a>
+                  <a href={`/vods/${vod.id}/pdf?download=1`} className="text-gray-700 hover:underline">Télécharger</a>
                 </td>
               </tr>
             ))}
