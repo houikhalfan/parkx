@@ -1,50 +1,81 @@
-import React from 'react';
-import { usePage } from '@inertiajs/react';
+import React, { useMemo, useState } from 'react';
 
-export default function VodsHistory({ vods: vodsProp }) {
-  const { vods: vodsFromPage = [] } = usePage().props || {};
-  const vods = vodsProp ?? vodsFromPage; // prefer prop if provided
+export default function VodsHistory({ vods = [] }) {
+  const [q, setQ] = useState('');
 
-  const formatEntreprise = (val) => {
-    if (!val) return '';
-    if (Array.isArray(val)) return val.join(', ');
-    try { const arr = JSON.parse(val); return Array.isArray(arr) ? arr.join(', ') : String(val); }
-    catch { return String(val); }
-  };
+  const filtered = useMemo(() => {
+    if (!q.trim()) return vods;
+    const s = q.toLowerCase();
+    return vods.filter(v => {
+      const date = (v.date || v.created_at || '').toString().toLowerCase();
+      const projet = (v.projet || '').toString().toLowerCase();
+      const activite = (v.activite || '').toString().toLowerCase();
+      const obs = (v.observateur || v.observer || '').toString().toLowerCase();
+      return date.includes(s) || projet.includes(s) || activite.includes(s) || obs.includes(s);
+    });
+  }, [q, vods]);
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-6">Historique des VODS</h2>
+    <div className="bg-white rounded-lg border shadow-sm p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h2 className="text-lg font-semibold">Historique des VODs</h2>
+        <input
+          className="input w-full sm:w-64"
+          placeholder="Filtrer par date/projet/activité…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
 
-      {(!vods || vods.length === 0) ? (
-        <p className="text-gray-600">Aucun VODS rempli pour le moment.</p>
-      ) : (
-        <table className="w-full bg-white shadow rounded">
-          <thead className="bg-gray-100 text-gray-700 text-left text-sm uppercase">
-            <tr>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Projet</th>
-              <th className="px-4 py-2">Activité</th>
-              <th className="px-4 py-2">Entreprise</th>
-              <th className="px-4 py-2">Actions</th>
+      {/* Mobile cards */}
+      <ul className="space-y-3 md:hidden">
+        {filtered.length === 0 && <li className="text-sm text-gray-500">Aucun résultat.</li>}
+        {filtered.map((v) => (
+          <li key={v.id ?? `${v.date}-${v.projet}-${v.activite}-${Math.random()}`} className="p-3 rounded border">
+            <div className="text-sm text-gray-500">{fmtDate(v.date || v.created_at)}</div>
+            <div className="font-medium">{v.projet || 'Projet —'}</div>
+            <div className="text-sm text-gray-600">{v.activite || 'Activité —'}</div>
+            <div className="text-xs text-gray-500 mt-1">Obs: {v.observateur || '—'}</div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500 border-b">
+              <th className="py-2 pr-4">Date</th>
+              <th className="py-2 pr-4">Projet</th>
+              <th className="py-2 pr-4">Activité</th>
+              <th className="py-2 pr-4">Observateur</th>
             </tr>
           </thead>
           <tbody>
-            {vods.map((vod) => (
-              <tr key={vod.id} className="border-t text-sm">
-                <td className="px-4 py-2">{vod.date ? new Date(vod.date).toLocaleDateString('fr-FR') : ''}</td>
-                <td className="px-4 py-2">{vod.projet}</td>
-                <td className="px-4 py-2">{vod.activite}</td>
-                <td className="px-4 py-2">{formatEntreprise(vod.entreprise_observee)}</td>
-                <td className="px-4 py-2 space-x-3">
-                  <a href={`/vods/${vod.id}/pdf`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Voir PDF</a>
-                  <a href={`/vods/${vod.id}/pdf?download=1`} className="text-gray-700 hover:underline">Télécharger</a>
-                </td>
+            {filtered.length === 0 && (
+              <tr><td colSpan={4} className="py-4 text-gray-500">Aucun résultat.</td></tr>
+            )}
+            {filtered.map((v) => (
+              <tr key={v.id ?? `${v.date}-${v.projet}-${v.activite}-${Math.random()}`} className="border-b last:border-0">
+                <td className="py-2 pr-4">{fmtDate(v.date || v.created_at)}</td>
+                <td className="py-2 pr-4">{v.projet || '—'}</td>
+                <td className="py-2 pr-4">{v.activite || '—'}</td>
+                <td className="py-2 pr-4">{v.observateur || '—'}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try {
+    const date = new Date(d);
+    return date.toLocaleDateString('fr-FR');
+  } catch {
+    return d;
+  }
 }

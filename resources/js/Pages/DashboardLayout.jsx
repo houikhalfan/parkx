@@ -3,48 +3,115 @@ import { Link, usePage } from '@inertiajs/react';
 
 export default function DashboardLayout({ children }) {
   const { auth, quota } = usePage().props;
+  const { url = (typeof window !== 'undefined' ? window.location.pathname : '') } = usePage();
   const remaining = Math.max(0, quota?.remaining ?? 0);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close drawer on route change
+  useEffect(() => { setSidebarOpen(false); }, [url]);
+
+  // ESC to close drawer
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setSidebarOpen(false); };
+    if (sidebarOpen) document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [sidebarOpen]);
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Toasts (fixed top-right) */}
+    <div className={`min-h-screen bg-gray-100 ${sidebarOpen ? 'overflow-hidden' : ''}`}>
+      {/* Toasts */}
       <FlashToaster />
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-50 text-[#1f2937] flex flex-col items-center py-6 shadow-lg border-r border-gray-200">
-        {/* Logo */}
-        <div className="mb-6">
+      {/* Mobile top bar */}
+      <div className="sticky top-0 z-40 bg-white border-b md:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Ouvrir le menu"
+            className="p-2 rounded-md border hover:bg-gray-50"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <img src="/images/logo.png" alt="Logo" className="h-8" />
+          <span className="text-sm text-gray-700 font-medium">{auth?.user?.name || 'Utilisateur'}</span>
+        </div>
+      </div>
+
+      {/* Mobile drawer + overlay */}
+      <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
+        <div
+          className={`absolute inset-0 bg-black/40 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu latéral"
+          className={`absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-gray-50 text-[#1f2937] shadow-xl border-r
+                      transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                      flex flex-col`}
+        >
+          <div className="flex items-center justify-between px-4 py-4 border-b">
+            <img src="/images/logo.png" alt="Logo" className="h-10" />
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Fermer le menu"
+              className="p-2 rounded-md hover:bg-gray-100"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <SidebarContent
+            auth={auth}
+            remaining={remaining}
+            onNavigate={() => setSidebarOpen(false)}
+          />
+        </aside>
+      </div>
+
+      {/* Desktop static sidebar */}
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 bg-gray-50 text-[#1f2937] py-6 shadow-lg border-r">
+        <div className="px-6 mb-6">
           <img src="/images/logo.png" alt="Logo" className="h-12 mx-auto" />
         </div>
-
-        {/* User Info */}
-        <div className="mb-8 text-center">
+        <div className="px-6 mb-6 text-center">
           <p className="font-semibold text-lg">{auth?.user?.name || 'Utilisateur'}</p>
         </div>
-
-        {/* Navigation */}
-        <nav className="w-full px-4 space-y-2">
-          <NavLink href="/dashboard" label="Dashboard" />
-
-          {/* VODS with badge showing remaining to submit this month */}
-          <NavLink
-            href="/vods"
-            label="VODS"
-            matchPrefix="/vods"
-            badge={remaining > 0 ? (remaining > 99 ? '99+' : remaining) : null}
-          />
-
-          <NavLink href="#" label="Autre Option" />
-        </nav>
+        <SidebarContent auth={auth} remaining={remaining} />
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      {/* Main content (push right on desktop) */}
+      <main className="md:pl-64 p-6">{children}</main>
     </div>
   );
 }
 
-// --- Toast component (auto-fade) ---
+/* ---- Shared sidebar content ---- */
+function SidebarContent({ auth, remaining, onNavigate }) {
+  return (
+    <nav className="px-4 space-y-2">
+      <NavLink href="/dashboard" label="Dashboard" onNavigate={onNavigate} />
+      <NavLink
+        href="/vods"
+        label="VODS"
+        matchPrefix="/vods"
+        badge={remaining > 0 ? (remaining > 99 ? '99+' : remaining) : null}
+        onNavigate={onNavigate}
+      />
+      <NavLink href="#" label="Autre Option" onNavigate={onNavigate} />
+    </nav>
+  );
+}
+
+/* ---- Toasts (auto-fade) ---- */
 function FlashToaster() {
   const { flash = {} } = usePage().props;
   const [visible, setVisible] = useState(false);
@@ -100,10 +167,10 @@ function FlashToaster() {
   );
 }
 
-// Custom NavLink Component with optional badge
-function NavLink({ href, label, matchPrefix, badge }) {
-  const path = typeof window !== 'undefined' ? window.location.pathname : '';
-  const isActive = matchPrefix ? path.startsWith(matchPrefix) : path === href;
+/* ---- NavLink with active & optional badge ---- */
+function NavLink({ href, label, matchPrefix, badge, onNavigate }) {
+  const { url = (typeof window !== 'undefined' ? window.location.pathname : '') } = usePage();
+  const isActive = matchPrefix ? url.startsWith(matchPrefix) : url === href;
 
   return (
     <div className="relative">
@@ -118,7 +185,8 @@ function NavLink({ href, label, matchPrefix, badge }) {
       )}
       <Link
         href={href}
-        className={`block px-4 py-2 rounded-md text-sm font-medium ${
+        onClick={onNavigate}
+        className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
           isActive
             ? 'bg-blue-100 text-blue-800 font-semibold'
             : 'text-gray-700 hover:bg-gray-200'
