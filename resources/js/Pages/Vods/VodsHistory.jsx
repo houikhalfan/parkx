@@ -30,14 +30,44 @@ export default function VodsHistory({ vods = [] }) {
       {/* Mobile cards */}
       <ul className="space-y-3 md:hidden">
         {filtered.length === 0 && <li className="text-sm text-gray-500">Aucun résultat.</li>}
-        {filtered.map((v) => (
-          <li key={v.id ?? `${v.date}-${v.projet}-${v.activite}-${Math.random()}`} className="p-3 rounded border">
-            <div className="text-sm text-gray-500">{fmtDate(v.date || v.created_at)}</div>
-            <div className="font-medium">{v.projet || 'Projet —'}</div>
-            <div className="text-sm text-gray-600">{v.activite || 'Activité —'}</div>
-            <div className="text-xs text-gray-500 mt-1">Obs: {v.observateur || '—'}</div>
-          </li>
-        ))}
+        {filtered.map((v) => {
+          const pdf = pdfHref(v);
+          const dl = downloadHref(v);
+          return (
+            <li key={v.id ?? `${v.date}-${v.projet}-${v.activite}-${Math.random()}`} className="p-3 rounded border">
+              <div className="text-sm text-gray-500">{fmtDate(v.date || v.created_at)}</div>
+              <div className="font-medium">{v.projet || 'Projet —'}</div>
+              <div className="text-sm text-gray-600">{v.activite || 'Activité —'}</div>
+              <div className="text-xs text-gray-500 mt-1">Obs: {v.observateur || '—'}</div>
+
+              {(pdf || dl) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {pdf && (
+                    <a
+                      href={pdf}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1.5 rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium"
+                      aria-label="Voir le PDF"
+                    >
+                      Voir PDF
+                    </a>
+                  )}
+                  {dl && (
+                    <a
+                      href={dl}
+                      className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-200 text-gray-700 bg-gray-50 hover:bg-gray-100 text-xs font-medium"
+                      aria-label="Télécharger le PDF"
+                      download
+                    >
+                      Télécharger
+                    </a>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {/* Desktop table */}
@@ -49,26 +79,62 @@ export default function VodsHistory({ vods = [] }) {
               <th className="py-2 pr-4">Projet</th>
               <th className="py-2 pr-4">Activité</th>
               <th className="py-2 pr-4">Observateur</th>
+              <th className="py-2 pr-4">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="py-4 text-gray-500">Aucun résultat.</td></tr>
+              <tr><td colSpan={5} className="py-4 text-gray-500">Aucun résultat.</td></tr>
             )}
-            {filtered.map((v) => (
-              <tr key={v.id ?? `${v.date}-${v.projet}-${v.activite}-${Math.random()}`} className="border-b last:border-0">
-                <td className="py-2 pr-4">{fmtDate(v.date || v.created_at)}</td>
-                <td className="py-2 pr-4">{v.projet || '—'}</td>
-                <td className="py-2 pr-4">{v.activite || '—'}</td>
-                <td className="py-2 pr-4">{v.observateur || '—'}</td>
-              </tr>
-            ))}
+            {filtered.map((v) => {
+              const pdf = pdfHref(v);
+              const dl = downloadHref(v);
+              return (
+                <tr key={v.id ?? `${v.date}-${v.projet}-${v.activite}-${Math.random()}`} className="border-b last:border-0">
+                  <td className="py-2 pr-4">{fmtDate(v.date || v.created_at)}</td>
+                  <td className="py-2 pr-4">{v.projet || '—'}</td>
+                  <td className="py-2 pr-4">{v.activite || '—'}</td>
+                  <td className="py-2 pr-4">{v.observateur || '—'}</td>
+                  <td className="py-2 pr-4">
+                    {(pdf || dl) ? (
+                      <div className="flex items-center gap-2">
+                        {pdf && (
+                          <a
+                            href={pdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1.5 rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                            aria-label="Voir le PDF"
+                          >
+                            Voir PDF
+                          </a>
+                        )}
+                        {dl && (
+                          <a
+                            href={dl}
+                            className="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-200 text-gray-700 bg-gray-50 hover:bg-gray-100"
+                            aria-label="Télécharger le PDF"
+                            download
+                          >
+                            Télécharger
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
     </div>
   );
 }
+
+/* Helpers */
 
 function fmtDate(d) {
   if (!d) return '—';
@@ -78,4 +144,17 @@ function fmtDate(d) {
   } catch {
     return d;
   }
+}
+
+// Prefer URLs provided by the backend; otherwise fall back to REST-style paths
+function pdfHref(v) {
+  if (v?.pdf_url) return v.pdf_url;
+  if (v?.urls?.pdf) return v.urls.pdf;
+  return v?.id ? `/vods/${v.id}/pdf` : null;
+}
+
+function downloadHref(v) {
+  if (v?.download_url) return v.download_url;
+  if (v?.urls?.download) return v.urls.download;
+  return v?.id ? `/vods/${v.id}/download` : null;
 }

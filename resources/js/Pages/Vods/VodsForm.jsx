@@ -5,11 +5,13 @@ export default function VodsForm() {
   const { auth, flash: _flash } = usePage().props;
   const flash = _flash || {};
 
+  // Quota banners/lock
   const { quota } = usePage().props || {};
   const canSubmit = quota?.canSubmit ?? true;
   const remaining = quota?.remaining ?? null;
   const daysLeft  = quota?.daysLeft ?? null;
 
+  // For full reset of file inputs
   const [formVersion, setFormVersion] = useState(0);
 
   // Mobile detection for default-collapsed sections
@@ -22,13 +24,14 @@ export default function VodsForm() {
     return () => mq.removeEventListener?.('change', update);
   }, []);
 
+  // Helpers
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const todayHuman = useMemo(() => new Date().toLocaleDateString('fr-FR'), []);
   const onlyLetters = (text) => /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test((text || '').trim());
   const lettersOnlyProps = { pattern: "[A-Za-zÀ-ÖØ-öø-ÿ\\s]+", title: "Lettres et espaces uniquement" };
 
   const [header, setHeader] = useState({
-    date: '',
+    date: '', // set on mount
     projet: '',
     activite: '',
     observateur: auth?.user?.name || '',
@@ -37,6 +40,7 @@ export default function VodsForm() {
   });
 
   useEffect(() => {
+    // Only set default date once (if not prefilled by server)
     setHeader((h) => h.date ? h : { ...h, date: todayIso });
   }, [todayIso]);
 
@@ -187,7 +191,7 @@ export default function VodsForm() {
         setAutresConditions([]);
         setErrors({});
         setTopAlert(null);
-        setFormVersion(v => v + 1);
+        setFormVersion(v => v + 1); // remount to reset files
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       onError: (serverErrors) => {
@@ -230,362 +234,369 @@ export default function VodsForm() {
       )}
 
       {/* Header */}
-      <div className="space-y-3 border-b pb-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/images/logo.png" alt="Logo" className="h-8 sm:h-10" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Visite Observation et Ronde HSE</h1>
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600">
-            <strong>Date d’émission:</strong> {todayHuman}
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3 border-b pb-4">
+        {/* Left: logo */}
+        <div className="flex justify-center sm:justify-start">
+          <img src="/images/logo.png" alt="Logo" className="h-10 sm:h-12" />
         </div>
 
-        <fieldset disabled={!canSubmit} className={!canSubmit ? 'opacity-60 pointer-events-none select-none' : ''}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-            <Field
-              label="Date"
-              error={errors.date}
-              input={
-                <input
-                  type="date"
-                  value={header.date}
-                  onChange={(e) => setHeader({ ...header, date: e.target.value })}
-                  className="input w-full"
-                  required
-                  aria-invalid={!!errors.date}
-                />
-              }
-            />
+        {/* Center: title (always centered) */}
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 text-center">
+          Visite Observation et Ronde HSE
+        </h1>
 
-            <Field
-              label="Projet"
-              error={errors.projet}
-              input={
-                <input
-                  type="text"
-                  placeholder="Projet"
-                  value={header.projet}
-                  onChange={(e) => setHeader({ ...header, projet: e.target.value })}
-                  className="input w-full"
-                  {...lettersOnlyProps}
-                  required
-                  aria-invalid={!!errors.projet}
-                />
-              }
-            />
-
-            <Field
-              label="Activité"
-              error={errors.activite}
-              input={
-                <input
-                  type="text"
-                  placeholder="Activité"
-                  value={header.activite}
-                  onChange={(e) => setHeader({ ...header, activite: e.target.value })}
-                  className="input w-full"
-                  {...lettersOnlyProps}
-                  required
-                  aria-invalid={!!errors.activite}
-                />
-              }
-            />
-
-            <Field
-              className="md:col-span-3"
-              label="Observateur"
-              input={
-                <input
-                  type="text"
-                  value={header.observateur}
-                  readOnly
-                  className="input w-full bg-gray-100 text-gray-700 cursor-not-allowed"
-                />
-              }
-            />
-
-            {/* Personnes observées */}
-            <div className="md:col-span-3 space-y-2">
-              <Label>Personnes observées</Label>
-              <div className="space-y-2">
-                {header.personnesObservees.map((person, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      placeholder={`Personne observée ${index + 1}`}
-                      value={person}
-                      onChange={(e) => {
-                        const updated = [...header.personnesObservees];
-                        updated[index] = e.target.value;
-                        setHeader({ ...header, personnesObservees: updated });
-                      }}
-                      className="input w-full"
-                      {...lettersOnlyProps}
-                      required={index === 0}
-                    />
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const copy = [...header.personnesObservees];
-                          copy.splice(index, 1);
-                          setHeader({ ...header, personnesObservees: copy });
-                        }}
-                        className="px-3 py-2 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200"
-                      >
-                        Retirer
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {errors.personnesObservees && <p className="text-red-500 text-sm">{errors.personnesObservees}</p>}
-                {header.personnesObservees.map((_, i) =>
-                  errors[`personnesObservees_${i}`] ? (
-                    <p key={i} className="text-red-500 text-sm">{errors[`personnesObservees_${i}`]}</p>
-                  ) : null
-                )}
-                <button
-                  type="button"
-                  onClick={() => setHeader({ ...header, personnesObservees: [...header.personnesObservees, ''] })}
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  + Ajouter personne
-                </button>
-              </div>
-            </div>
-
-            {/* Entreprises observées */}
-            <div className="md:col-span-3 space-y-2">
-              <Label>Entreprises observées</Label>
-              <div className="space-y-2">
-                {header.entrepriseObservee.map((entreprise, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      placeholder={`Entreprise observée ${index + 1}`}
-                      value={entreprise}
-                      onChange={(e) => {
-                        const updated = [...header.entrepriseObservee];
-                        updated[index] = e.target.value;
-                        setHeader({ ...header, entrepriseObservee: updated });
-                      }}
-                      className="input w-full"
-                      {...lettersOnlyProps}
-                      required={index === 0}
-                    />
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const copy = [...header.entrepriseObservee];
-                          copy.splice(index, 1);
-                          setHeader({ ...header, entrepriseObservee: copy });
-                        }}
-                        className="px-3 py-2 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200"
-                      >
-                        Retirer
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {errors.entrepriseObservee && <p className="text-red-500 text-sm">{errors.entrepriseObservee}</p>}
-                {header.entrepriseObservee.map((_, i) =>
-                  errors[`entrepriseObservee_${i}`] ? (
-                    <p key={i} className="text-red-500 text-sm">{errors[`entrepriseObservee_${i}`]}</p>
-                  ) : null
-                )}
-                <button
-                  type="button"
-                  onClick={() => setHeader({ ...header, entrepriseObservee: [...header.entrepriseObservee, ''] })}
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  + Ajouter entreprise
-                </button>
-              </div>
-            </div>
-          </div>
-        </fieldset>
+        {/* Right: date */}
+        <div className="text-sm text-gray-600 text-center sm:text-right">
+          <strong>Date d’émission:</strong> {todayHuman}
+        </div>
       </div>
 
-      {/* Bonnes pratiques */}
-      <SectionCard title="Bonnes pratiques" defaultOpen={!isMobile}>
-        {pratiques.map((item, i) => (
-          <div key={i} className="space-y-2 sm:space-y-0 sm:flex sm:items-start sm:gap-3 mb-3">
-            <input
-              type="text"
-              placeholder="Description"
-              value={item.text}
-              onChange={(e) => {
-                const updated = [...pratiques];
-                updated[i].text = e.target.value;
-                setPratiques(updated);
-              }}
-              className="input w-full sm:flex-1"
-            />
-            <div className="flex items-center gap-2">
-              <ImageInput
-                file={item.photo}
-                onChange={(file) => handleFileUpload(pratiques, setPratiques, i, file)}
-                ariaLabel={`Photo bonne pratique ${i + 1}`}
-              />
-              {i > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const copy = [...pratiques];
-                    copy.splice(i, 1);
-                    setPratiques(copy);
-                  }}
-                  className="px-3 py-2 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
-                >
-                  Retirer
-                </button>
-              )}
-            </div>
-            {errors[`pratique_${i}`] && <p className="text-red-500 text-sm">{errors[`pratique_${i}`]}</p>}
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => setPratiques([...pratiques, { text: '', photo: null }])}
-          className="text-blue-600 hover:underline text-sm"
-        >
-          + Ajouter
-        </button>
-      </SectionCard>
-
-      {/* Comportements dangereux */}
-      <SectionCard title="Comportements dangereux" defaultOpen={!isMobile}>
-        {comportements.map((item, i) => (
-          <div key={i} className="mb-4 space-y-2">
-            <select
-              value={item.type}
-              onChange={(e) => {
-                const updated = [...comportements];
-                updated[i].type = e.target.value;
-                setComportements(updated);
-              }}
-              className="input w-full"
-            >
-              <option value="">-- Choisir un type de risque --</option>
-              {comportementOptions.map((opt, idx) => (
-                <option key={idx} value={opt}>{opt}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Description"
-              value={item.description}
-              onChange={(e) => {
-                const updated = [...comportements];
-                updated[i].description = e.target.value;
-                setComportements(updated);
-              }}
-              className="input w-full"
-            />
-            <div className="flex items-center gap-2">
-              <ImageInput
-                file={item.photo}
-                onChange={(file) => handleFileUpload(comportements, setComportements, i, file)}
-                ariaLabel={`Photo comportement ${i + 1}`}
-              />
-              {i > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const copy = [...comportements];
-                    copy.splice(i, 1);
-                    setComportements(copy);
-                  }}
-                  className="px-3 py-2 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
-                >
-                  Retirer
-                </button>
-              )}
-            </div>
-            {errors[`comportement_${i}`] && <p className="text-red-500 text-sm">{errors[`comportement_${i}`]}</p>}
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => setComportements([...comportements, { type: '', description: '', photo: null }])}
-          className="text-blue-600 hover:underline text-sm"
-        >
-          + Ajouter
-        </button>
-      </SectionCard>
-
-      {/* Conditions dangereuses */}
-      <SectionCard title="Conditions dangereuses" defaultOpen={!isMobile}>
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
-          {dangerousConditionsList.map((cond) => (
-            <label key={cond} className="flex items-center gap-3 text-sm">
+      {/* Everything inside this fieldset will disable when quota reached */}
+      <fieldset disabled={!canSubmit} className={!canSubmit ? 'opacity-60 pointer-events-none select-none' : ''}>
+        {/* Champs d’entête */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <Field
+            label="Date"
+            error={errors.date}
+            input={
               <input
-                type="checkbox"
-                className="h-4 w-4"
-                checked={!!conditions[cond]}
-                onChange={() => handleConditionToggle(cond)}
+                type="date"
+                value={header.date}
+                onChange={(e) => setHeader({ ...header, date: e.target.value })}
+                className="input w-full"
+                required
+                aria-invalid={!!errors.date}
               />
-              <span className="leading-snug">{cond}</span>
-            </label>
-          ))}
+            }
+          />
+
+          <Field
+            label="Projet"
+            error={errors.projet}
+            input={
+              <input
+                type="text"
+                placeholder="Projet"
+                value={header.projet}
+                onChange={(e) => setHeader({ ...header, projet: e.target.value })}
+                className="input w-full"
+                {...lettersOnlyProps}
+                required
+                aria-invalid={!!errors.projet}
+              />
+            }
+          />
+
+          <Field
+            label="Activité"
+            error={errors.activite}
+            input={
+              <input
+                type="text"
+                placeholder="Activité"
+                value={header.activite}
+                onChange={(e) => setHeader({ ...header, activite: e.target.value })}
+                className="input w-full"
+                {...lettersOnlyProps}
+                required
+                aria-invalid={!!errors.activite}
+              />
+            }
+          />
+
+          <Field
+            className="md:col-span-3"
+            label="Observateur"
+            input={
+              <input
+                type="text"
+                value={header.observateur}
+                readOnly
+                className="input w-full bg-gray-100 text-gray-700 cursor-not-allowed"
+              />
+            }
+          />
+
+          {/* Personnes observées */}
+          <div className="md:col-span-3 space-y-2">
+            <Label>Personnes observées</Label>
+            <div className="space-y-2">
+              {header.personnesObservees.map((person, index) => (
+                <div key={index} className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    placeholder={`Personne observée ${index + 1}`}
+                    value={person}
+                    onChange={(e) => {
+                      const updated = [...header.personnesObservees];
+                      updated[index] = e.target.value;
+                      setHeader({ ...header, personnesObservees: updated });
+                    }}
+                    className="input w-full"
+                    {...lettersOnlyProps}
+                    required={index === 0}
+                  />
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const copy = [...header.personnesObservees];
+                        copy.splice(index, 1);
+                        setHeader({ ...header, personnesObservees: copy });
+                      }}
+                      className="px-3 py-2 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200"
+                    >
+                      Retirer
+                    </button>
+                  )}
+                </div>
+              ))}
+              {errors.personnesObservees && <p className="text-red-500 text-sm">{errors.personnesObservees}</p>}
+              {header.personnesObservees.map((_, i) =>
+                errors[`personnesObservees_${i}`] ? (
+                  <p key={i} className="text-red-500 text-sm">{errors[`personnesObservees_${i}`]}</p>
+                ) : null
+              )}
+              <button
+                type="button"
+                onClick={() => setHeader({ ...header, personnesObservees: [...header.personnesObservees, ''] })}
+                className="text-blue-600 hover:underline text-sm"
+              >
+                + Ajouter personne
+              </button>
+            </div>
+          </div>
+
+          {/* Entreprises observées */}
+          <div className="md:col-span-3 space-y-2">
+            <Label>Entreprises observées</Label>
+            <div className="space-y-2">
+              {header.entrepriseObservee.map((entreprise, index) => (
+                <div key={index} className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    placeholder={`Entreprise observée ${index + 1}`}
+                    value={entreprise}
+                    onChange={(e) => {
+                      const updated = [...header.entrepriseObservee];
+                      updated[index] = e.target.value;
+                      setHeader({ ...header, entrepriseObservee: updated });
+                    }}
+                    className="input w-full"
+                    {...lettersOnlyProps}
+                    required={index === 0}
+                  />
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const copy = [...header.entrepriseObservee];
+                        copy.splice(index, 1);
+                        setHeader({ ...header, entrepriseObservee: copy });
+                      }}
+                      className="px-3 py-2 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200"
+                    >
+                      Retirer
+                    </button>
+                  )}
+                </div>
+              ))}
+              {errors.entrepriseObservee && <p className="text-red-500 text-sm">{errors.entrepriseObservee}</p>}
+              {header.entrepriseObservee.map((_, i) =>
+                errors[`entrepriseObservee_${i}`] ? (
+                  <p key={i} className="text-red-500 text-sm">{errors[`entrepriseObservee_${i}`]}</p>
+                ) : null
+              )}
+              <button
+                type="button"
+                onClick={() => setHeader({ ...header, entrepriseObservee: [...header.entrepriseObservee, ''] })}
+                className="text-blue-600 hover:underline text-sm"
+              >
+                + Ajouter entreprise
+              </button>
+            </div>
+          </div>
         </div>
 
-        {autresConditions.map((val, idx) => (
-          <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
-            <input
-              type="text"
-              placeholder="Autre condition"
-              value={val}
-              onChange={(e) => {
-                const copy = [...autresConditions];
-                copy[idx] = e.target.value;
-                setAutresConditions(copy);
-              }}
-              onBlur={(e) => {
-                const name = e.target.value.trim();
-                if (name && !conditions[name]) setConditions((prev) => ({ ...prev, [name]: true }));
-              }}
-              className="input w-full sm:flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const copy = [...autresConditions];
-                copy.splice(idx, 1);
-                setAutresConditions(copy);
-              }}
-              className="px-3 py-2 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
-            >
-              Retirer
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => setAutresConditions([...autresConditions, ''])}
-          className="mt-2 text-blue-600 hover:underline text-sm"
-        >
-          + Ajouter une autre
-        </button>
-      </SectionCard>
+        {/* Bonnes pratiques */}
+        <SectionCard title="Bonnes pratiques" defaultOpen={!isMobile}>
+          {pratiques.map((item, i) => (
+            <div key={i} className="space-y-2 sm:space-y-0 sm:flex sm:items-start sm:gap-3 mb-3">
+              <input
+                type="text"
+                placeholder="Description"
+                value={item.text}
+                onChange={(e) => {
+                  const updated = [...pratiques];
+                  updated[i].text = e.target.value;
+                  setPratiques(updated);
+                }}
+                className="input w-full sm:flex-1"
+              />
+              <div className="flex items-center gap-2">
+                <ImageInput
+                  file={item.photo}
+                  onChange={(file) => handleFileUpload(pratiques, setPratiques, i, file)}
+                  ariaLabel={`Photo bonne pratique ${i + 1}`}
+                />
+                {i > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const copy = [...pratiques];
+                      copy.splice(i, 1);
+                      setPratiques(copy);
+                    }}
+                    className="px-3 py-2 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                  >
+                    Retirer
+                  </button>
+                )}
+              </div>
+              {errors[`pratique_${i}`] && <p className="text-red-500 text-sm">{errors[`pratique_${i}`]}</p>}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPratiques([...pratiques, { text: '', photo: null }])}
+            className="text-blue-600 hover:underline text-sm"
+          >
+            + Ajouter
+          </button>
+        </SectionCard>
 
-      {/* Actions correctives */}
-      <SectionCard title="Actions correctives" defaultOpen={!isMobile}>
-        {Object.entries(conditions).filter(([, val]) => val).length === 0 ? (
-          <p className="text-sm text-gray-500">Sélectionnez des conditions dangereuses pour saisir des actions.</p>
-        ) : null}
-        {Object.entries(conditions).filter(([, val]) => val).map(([key]) => (
-          <div key={key} className="border-l-4 border-green-500 bg-green-50 p-4 rounded mb-4 shadow-sm space-y-2">
-            <h4 className="font-semibold text-gray-800">{key}</h4>
-            <input type="text" placeholder="Action" onChange={(e) => handleCorrectiveChange(key, 'action', e.target.value)} className="input w-full" />
-            <input type="text" placeholder="Responsable" onChange={(e) => handleCorrectiveChange(key, 'responsable', e.target.value)} className="input w-full" />
-            <input type="text" placeholder="Statut" onChange={(e) => handleCorrectiveChange(key, 'statut', e.target.value)} className="input w-full" />
-            <ImageInput file={correctives[key]?.photo || null} onChange={(file) => handleCorrectiveChange(key, 'photo', file)} ariaLabel={`Photo corrective ${key}`} />
+        {/* Comportements dangereux */}
+        <SectionCard title="Comportements dangereux" defaultOpen={!isMobile}>
+          {comportements.map((item, i) => (
+            <div key={i} className="mb-4 space-y-2">
+              <select
+                value={item.type}
+                onChange={(e) => {
+                  const updated = [...comportements];
+                  updated[i].type = e.target.value;
+                  setComportements(updated);
+                }}
+                className="input w-full"
+              >
+                <option value="">-- Choisir un type de risque --</option>
+                {comportementOptions.map((opt, idx) => (
+                  <option key={idx} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Description"
+                value={item.description}
+                onChange={(e) => {
+                  const updated = [...comportements];
+                  updated[i].description = e.target.value;
+                  setComportements(updated);
+                }}
+                className="input w-full"
+              />
+              <div className="flex items-center gap-2">
+                <ImageInput
+                  file={item.photo}
+                  onChange={(file) => handleFileUpload(comportements, setComportements, i, file)}
+                  ariaLabel={`Photo comportement ${i + 1}`}
+                />
+                {i > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const copy = [...comportements];
+                      copy.splice(i, 1);
+                      setComportements(copy);
+                    }}
+                    className="px-3 py-2 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                  >
+                    Retirer
+                  </button>
+                )}
+              </div>
+              {errors[`comportement_${i}`] && <p className="text-red-500 text-sm">{errors[`comportement_${i}`]}</p>}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setComportements([...comportements, { type: '', description: '', photo: null }])}
+            className="text-blue-600 hover:underline text-sm"
+          >
+            + Ajouter
+          </button>
+        </SectionCard>
+
+        {/* Conditions dangereuses */}
+        <SectionCard title="Conditions dangereuses" defaultOpen={!isMobile}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
+            {dangerousConditionsList.map((cond) => (
+              <label key={cond} className="flex items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={!!conditions[cond]}
+                  onChange={() => handleConditionToggle(cond)}
+                />
+                <span className="leading-snug">{cond}</span>
+              </label>
+            ))}
           </div>
-        ))}
-      </SectionCard>
+
+          {autresConditions.map((val, idx) => (
+            <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
+              <input
+                type="text"
+                placeholder="Autre condition"
+                value={val}
+                onChange={(e) => {
+                  const copy = [...autresConditions];
+                  copy[idx] = e.target.value;
+                  setAutresConditions(copy);
+                }}
+                onBlur={(e) => {
+                  const name = e.target.value.trim();
+                  if (name && !conditions[name]) setConditions((prev) => ({ ...prev, [name]: true }));
+                }}
+                className="input w-full sm:flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const copy = [...autresConditions];
+                  copy.splice(idx, 1);
+                  setAutresConditions(copy);
+                }}
+                className="px-3 py-2 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setAutresConditions([...autresConditions, ''])}
+            className="mt-2 text-blue-600 hover:underline text-sm"
+          >
+            + Ajouter une autre
+          </button>
+        </SectionCard>
+
+        {/* Actions correctives */}
+        <SectionCard title="Actions correctives" defaultOpen={!isMobile}>
+          {Object.entries(conditions).filter(([, val]) => val).length === 0 ? (
+            <p className="text-sm text-gray-500">Sélectionnez des conditions dangereuses pour saisir des actions.</p>
+          ) : null}
+          {Object.entries(conditions).filter(([, val]) => val).map(([key]) => (
+            <div key={key} className="border-l-4 border-green-500 bg-green-50 p-4 rounded mb-4 shadow-sm space-y-2">
+              <h4 className="font-semibold text-gray-800">{key}</h4>
+              <input type="text" placeholder="Action" onChange={(e) => handleCorrectiveChange(key, 'action', e.target.value)} className="input w-full" />
+              <input type="text" placeholder="Responsable" onChange={(e) => handleCorrectiveChange(key, 'responsable', e.target.value)} className="input w-full" />
+              <input type="text" placeholder="Statut" onChange={(e) => handleCorrectiveChange(key, 'statut', e.target.value)} className="input w-full" />
+              <ImageInput file={correctives[key]?.photo || null} onChange={(file) => handleCorrectiveChange(key, 'photo', file)} ariaLabel={`Photo corrective ${key}`} />
+            </div>
+          ))}
+        </SectionCard>
+      </fieldset>
 
       {/* Desktop submit */}
       <div className="pt-2 hidden md:block">
