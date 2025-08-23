@@ -7,45 +7,36 @@ return [
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Guards
-    |--------------------------------------------------------------------------
-    */
     'guards' => [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
         ],
-
-        'admin' => [ // ✅ Added admin guard
+        'admin' => [
             'driver' => 'session',
             'provider' => 'admins',
         ],
+        'contractor' => [ // NEW
+            'driver' => 'session',
+            'provider' => 'contractors',
+        ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | User Providers
-    |--------------------------------------------------------------------------
-    */
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model'  => App\Models\User::class,
         ],
-
-        'admins' => [ // ✅ Admin provider
+        'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
+            'model'  => App\Models\Admin::class,
+        ],
+        'contractors' => [ // NEW
+            'driver' => 'eloquent',
+            'model'  => App\Models\Contractor::class,
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Resetting Passwords
-    |--------------------------------------------------------------------------
-    */
     'passwords' => [
         'users' => [
             'provider' => 'users',
@@ -53,9 +44,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
-
-        'admins' => [ // Optional: add this if you want admin password resets later
+        'admins' => [
             'provider' => 'admins',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'contractors' => [ // optional
+            'provider' => 'contractors',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,

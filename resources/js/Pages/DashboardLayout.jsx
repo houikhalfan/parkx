@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, menuMode = 'default' }) {
   const { auth, quota } = usePage().props;
   const { url = (typeof window !== 'undefined' ? window.location.pathname : '') } = usePage();
   const remaining = Math.max(0, quota?.remaining ?? 0);
@@ -72,6 +72,7 @@ export default function DashboardLayout({ children }) {
           <SidebarContent
             auth={auth}
             remaining={remaining}
+            menuMode={menuMode}
             onNavigate={() => setSidebarOpen(false)}
           />
         </aside>
@@ -85,7 +86,7 @@ export default function DashboardLayout({ children }) {
         <div className="px-6 mb-6 text-center">
           <p className="font-semibold text-lg">{auth?.user?.name || 'Utilisateur'}</p>
         </div>
-        <SidebarContent auth={auth} remaining={remaining} />
+        <SidebarContent auth={auth} remaining={remaining} menuMode={menuMode} />
       </aside>
 
       {/* Main content (push right on desktop) */}
@@ -95,18 +96,33 @@ export default function DashboardLayout({ children }) {
 }
 
 /* ---- Shared sidebar content ---- */
-function SidebarContent({ auth, remaining, onNavigate }) {
+function SidebarContent({ remaining, onNavigate, menuMode = 'default' }) {
+  const navDefault = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'VODS', href: '/vods', matchPrefix: ['/vods'], badge: remaining > 0 ? (remaining > 99 ? '99+' : remaining) : null },
+    { label: 'Autre Option', href: '/vods/history' },
+  ];
+
+  const navStats = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Statistiques', href: '/contractor/stats/new', matchPrefix: ['/contractor/stats/new', '/contractor/stats'] },
+    { label: 'Historique', href: '/contractor/stats/history', matchPrefix: ['/contractor/stats/history'] },
+  ];
+
+  const items = menuMode === 'stats' ? navStats : navDefault;
+
   return (
     <nav className="px-4 space-y-2">
-      <NavLink href="/dashboard" label="Dashboard" onNavigate={onNavigate} />
-      <NavLink
-        href="/vods"
-        label="VODS"
-        matchPrefix="/vods"
-        badge={remaining > 0 ? (remaining > 99 ? '99+' : remaining) : null}
-        onNavigate={onNavigate}
-      />
-      <NavLink href="#" label="Autre Option" onNavigate={onNavigate} />
+      {items.map((i) => (
+        <NavLink
+          key={i.href}
+          href={i.href}
+          label={i.label}
+          matchPrefix={i.matchPrefix}
+          badge={i.badge}
+          onNavigate={onNavigate}
+        />
+      ))}
     </nav>
   );
 }
@@ -170,7 +186,12 @@ function FlashToaster() {
 /* ---- NavLink with active & optional badge ---- */
 function NavLink({ href, label, matchPrefix, badge, onNavigate }) {
   const { url = (typeof window !== 'undefined' ? window.location.pathname : '') } = usePage();
-  const isActive = matchPrefix ? url.startsWith(matchPrefix) : url === href;
+  const prefixes = Array.isArray(matchPrefix)
+    ? matchPrefix
+    : matchPrefix
+    ? [matchPrefix]
+    : [];
+  const isActive = prefixes.length ? prefixes.some((p) => url.startsWith(p)) : url === href;
 
   return (
     <div className="relative">

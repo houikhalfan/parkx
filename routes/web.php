@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VodsController;
+use App\Http\Controllers\ContractorStatsController;
 use App\Http\Middleware\AdminAuth;
 
 /**
@@ -37,7 +38,17 @@ Route::middleware('auth')->group(function () {
 });
 
 /**
- * ADMIN ROUTES — single group, only existing controllers
+ * CONTRACTOR STATS (your “Statistiques” app)
+ * We use your contractor session key: session('contractor_id')
+ */
+Route::prefix('contractor/stats')->name('contractor.stats.')->group(function () {
+    Route::get('/new',    [ContractorStatsController::class, 'create'])->name('create');
+    Route::post('/',      [ContractorStatsController::class, 'store'])->name('store');
+    Route::get('/history',[ContractorStatsController::class, 'history'])->name('history');
+});
+
+/**
+ * ADMIN ROUTES
  */
 Route::prefix('admin')->name('admin.')->group(function () {
     // Auth (no AdminAuth)
@@ -45,14 +56,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/login', [AdminController::class, 'login'])->name('login.submit');
 
     Route::middleware([AdminAuth::class])->group(function () {
-        // Home page (your Admin/Home Inertia page)
         Route::get('/home', [AdminController::class, 'home'])->name('home');
-
-        // Dashboard page that shows ParkX/Contractor tabs (your AdminDashboard component)
-        // You can pass ?tab=contractors to open the contractors tab.
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        // Actions
         Route::post('/users', [AdminController::class, 'createParkxUser'])->name('users.store');
         Route::post('/users/{id}/update-quota', [AdminController::class, 'updateUserVodsQuota'])->name('users.update-quota');
         Route::post('/users/{id}/delete', [AdminController::class, 'deleteParkxUser'])->name('users.delete');
@@ -61,6 +67,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/contractors/{id}/reject', [AdminController::class, 'rejectContractor'])->name('contractors.reject');
         Route::post('/contractors/{id}/delete', [AdminController::class, 'deleteApprovedContractor'])->name('contractors.delete');
 
+        // (your existing admin views for stats can keep using the same list/download logic)
         Route::post('/logout', function () {
             session()->forget('admin_id');
             return redirect()->route('admin.login');
