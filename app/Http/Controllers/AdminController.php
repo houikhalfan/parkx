@@ -12,6 +12,7 @@ use App\Models\Vod;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
+
 class AdminController extends Controller
 {
     // Admin login
@@ -35,16 +36,18 @@ class AdminController extends Controller
         return Inertia::location(route('admin.home'));
     }
 
-    // Admin dashboard (ParkX/Contractors management)
-    public function dashboard()
-    {
-        return Inertia::render('Admin/Dashboard', [
-            'pendingContractors'  => Contractor::where('is_approved', false)->get(),
-            'approvedContractors' => Contractor::where('is_approved', true)->get(),
-            'users'               => User::select('id','name','email','vods_quota','created_at')->get(),
-            'csrf_token'          => csrf_token(),
-        ]);
-    }
+  
+
+public function dashboard()
+{
+    return Inertia::render('Admin/Dashboard', [
+        'users' => User::orderBy('created_at','desc')->get(['id','name','email','vods_quota','created_at']),
+        'pendingContractors' => Contractor::where('is_approved', false)->orderBy('created_at','desc')->get(),
+        'approvedContractors' => Contractor::where('is_approved', true)->orderBy('created_at','desc')->get(),
+        'csrf_token' => csrf_token(),
+    ]);
+}
+
 
     // Create ParkX employee
     public function createParkxUser(Request $request)

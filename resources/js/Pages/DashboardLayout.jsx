@@ -1,220 +1,289 @@
 import React, { useEffect, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
+import {
+  Menu, Sun, Moon, Bell, Search, Home,
+  LayoutDashboard, FileText, History, BellRing, FileSignature
+} from 'lucide-react';
 
-export default function DashboardLayout({ children, menuMode = 'default' }) {
-  const { auth, quota } = usePage().props;
-  const { url = (typeof window !== 'undefined' ? window.location.pathname : '') } = usePage();
-  const remaining = Math.max(0, quota?.remaining ?? 0);
+export default function DashboardLayout({ children, title }) {
+  const { auth = {}, counts = {} } = usePage().props || {};
+  const user = auth.user || {};
+  const assigned = counts.assigned_papers ?? 0;
+  const vodsRemaining = counts.vods_remaining ?? 0;
+  const totalNotifs = (counts.notifications ?? 0) + assigned + (vodsRemaining > 0 ? 1 : 0);
 
+  /* theme (persist) */
+  const [theme, setTheme] = useState('light');
+  useEffect(() => {
+    const stored = localStorage.getItem('parkx-theme');
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    const next = stored || (prefersDark ? 'dark' : 'light');
+    setTheme(next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
+  }, []);
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('parkx-theme', next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
+  };
+
+  /* layout state */
+  const { url = (typeof window !== 'undefined' ? window.location.pathname : '/') } = usePage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  useEffect(() => { setNotifOpen(false); setSidebarOpen(false); }, [url]);
 
-  // Close drawer on route change
-  useEffect(() => { setSidebarOpen(false); }, [url]);
-
-  // ESC to close drawer
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') setSidebarOpen(false); };
-    if (sidebarOpen) document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [sidebarOpen]);
+  const pageTitle = title || usePage()?.component?.split('/').slice(-1)[0] || 'CMS';
 
   return (
-    <div className={`min-h-screen bg-gray-100 ${sidebarOpen ? 'overflow-hidden' : ''}`}>
-      {/* Toasts */}
-      <FlashToaster />
-
-      {/* Mobile top bar */}
-      <div className="sticky top-0 z-40 bg-white border-b md:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-900 dark:text-slate-100">
+      {/* TOP BAR */}
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-gray-200 dark:border-slate-700">
+        <div className="h-14 flex items-center gap-3 px-3 sm:px-4">
+          {/* Burger (mobile) */}
           <button
-            type="button"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Ouvrir le menu"
-            className="p-2 rounded-md border hover:bg-gray-50"
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 md:hidden"
+            aria-label="Open menu"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+            <Menu size={18} />
           </button>
-          <img src="/images/logo.png" alt="Logo" className="h-8" />
-          <span className="text-sm text-gray-700 font-medium">{auth?.user?.name || 'Utilisateur'}</span>
-        </div>
-      </div>
 
-      {/* Mobile drawer + overlay */}
-      <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
-        <div
-          className={`absolute inset-0 bg-black/40 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-        <aside
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu latéral"
-          className={`absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-gray-50 text-[#1f2937] shadow-xl border-r
-                      transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                      flex flex-col`}
-        >
-          <div className="flex items-center justify-between px-4 py-4 border-b">
-            <img src="/images/logo.png" alt="Logo" className="h-10" />
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Fermer le menu"
-              className="p-2 rounded-md hover:bg-gray-100"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
+          {/* Brand */}
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <img src="/images/logo.png" className="h-7 w-7 rounded-md" alt="Logo" />
+            <span className="font-semibold">Parkx</span>
+          </Link>
+
+          {/* Breadcrumb */}
+          <nav className="hidden md:flex items-center text-sm text-gray-500 dark:text-slate-300 ml-2">
+            <Home size={16} className="mr-1" />
+            <Link href="/dashboard" className="hover:text-gray-700 dark:hover:text-white">Dashboard</Link>
+            <span className="mx-2">/</span>
+            <span className="font-medium">{pageTitle}</span>
+          </nav>
+
+          {/* Search */}
+          <div className="ml-auto relative w-full max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-gray-400" />
+            </div>
+            <input
+              placeholder="Search…"
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-700/70 border border-transparent focus:border-blue-400 outline-none text-sm placeholder-gray-400 dark:placeholder-slate-300"
+            />
           </div>
-          <SidebarContent
-            auth={auth}
-            remaining={remaining}
-            menuMode={menuMode}
-            onNavigate={() => setSidebarOpen(false)}
-          />
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700"
+            title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              onClick={() => setNotifOpen((o) => !o)}
+              className="relative p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700"
+              aria-label="Notifications"
+            >
+              <Bell size={18} />
+              {totalNotifs > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1 text-[11px] font-semibold bg-rose-500 text-white rounded-full">
+                  {totalNotifs > 99 ? '99+' : totalNotifs}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div
+                onMouseLeave={() => setNotifOpen(false)}
+                className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden"
+              >
+                <div className="px-3 py-2 text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">
+                  Notifications
+                </div>
+                <ul className="max-h-72 overflow-auto text-sm">
+                  <NotifItem
+                    count={assigned}
+                    label="Papiers assignés à signer"
+                    href="/signatures/inbox"
+                    color="text-blue-600"
+                  />
+                  <NotifItem
+                    count={vodsRemaining}
+                    label="VODs restants ce mois"
+                    href="/vods"
+                    color="text-emerald-600"
+                    showZero={false}
+                  />
+                </ul>
+                <div className="px-3 py-2 border-t border-gray-200 dark:border-slate-700">
+                  <Link href="/vods/notifications" className="text-xs text-gray-600 dark:text-slate-300 hover:underline">
+                    Voir tout
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User */}
+          <div className="pl-2 ml-1 border-l border-gray-200 dark:border-slate-700 flex items-center gap-2">
+            <div className="text-right leading-tight hidden sm:block">
+              <div className="text-sm font-medium truncate">{user?.name || 'Utilisateur'}</div>
+              <div className="text-[11px] text-gray-500 dark:text-slate-300 truncate">{user?.role || 'ParkX'}</div>
+            </div>
+            <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-slate-600 flex items-center justify-center text-xs font-semibold">
+              {initials(user?.name)}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* SIDEBAR + MAIN WRAPPER */}
+      <div className="flex">
+        {/* Sidebar (desktop) */}
+        <aside className="hidden md:flex md:flex-col md:w-[280px] md:min-h-[calc(100vh-56px)] bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700">
+          {/* Brand row to mimic screenshot spacing */}
+          <div className="h-4" />
+
+          <nav className="px-4 py-4 space-y-6">
+            <NavSection title="OVERVIEW">
+              <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+            </NavSection>
+
+            <NavSection title="VODS & SIGNATURES">
+              <NavItem href="/vods" icon={FileText} label="VODS" />
+              <NavItem href="/vods/history" icon={History} label="Historique VODS" />
+              <NavItem
+                href="/vods/notifications"
+                icon={BellRing}
+                label="Notifications"
+                badge={totalNotifs || null}
+              />
+              <NavItem
+                href="/signatures/inbox"
+                icon={FileSignature}
+                label="Papiers assignés"
+                badge={assigned || null}
+              />
+            </NavSection>
+          </nav>
         </aside>
+
+        {/* Sidebar (mobile drawer) */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+            <aside className="absolute left-0 top-0 h-full w-[85vw] max-w-[320px] bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 shadow-xl">
+              <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <img src="/images/logo.png" className="h-7 w-7 rounded-md" alt="" />
+                  <span className="font-semibold">CMSFullForm</span>
+                </div>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700"
+                  aria-label="Close menu"
+                >
+                  ✕
+                </button>
+              </div>
+              <nav className="px-4 py-4 space-y-6">
+                <NavSection title="OVERVIEW">
+                  <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+                </NavSection>
+                <NavSection title="VODS & SIGNATURES">
+                  <NavItem href="/vods" icon={FileText} label="VODS" />
+                  <NavItem href="/vods/history" icon={History} label="Historique VODS" />
+                  <NavItem
+                    href="/vods/notifications"
+                    icon={BellRing}
+                    label="Notifications"
+                    badge={totalNotifs || null}
+                  />
+                  <NavItem
+                    href="/signatures/inbox"
+                    icon={FileSignature}
+                    label="Papiers assignés"
+                    badge={assigned || null}
+                  />
+                </NavSection>
+              </nav>
+            </aside>
+          </div>
+        )}
+
+        {/* Main content */}
+        <main className="flex-1 min-w-0 px-3 sm:px-4 py-4">
+          {/* subtle container to match screenshot cards */}
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm p-4 sm:p-6">
+            {children}
+          </div>
+        </main>
       </div>
-
-      {/* Desktop static sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 bg-gray-50 text-[#1f2937] py-6 shadow-lg border-r">
-        <div className="px-6 mb-6">
-          <img src="/images/logo.png" alt="Logo" className="h-12 mx-auto" />
-        </div>
-        <div className="px-6 mb-6 text-center">
-          <p className="font-semibold text-lg">{auth?.user?.name || 'Utilisateur'}</p>
-        </div>
-        <SidebarContent auth={auth} remaining={remaining} menuMode={menuMode} />
-      </aside>
-
-      {/* Main content (push right on desktop) */}
-      <main className="md:pl-64 p-6">{children}</main>
     </div>
   );
 }
 
-/* ---- Shared sidebar content ---- */
-function SidebarContent({ remaining, onNavigate, menuMode = 'default' }) {
-  const navDefault = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'VODS', href: '/vods', matchPrefix: ['/vods'], badge: remaining > 0 ? (remaining > 99 ? '99+' : remaining) : null },
-    { label: 'Autre Option', href: '/vods/history' },
-  ];
+/* ---------- Sidebar pieces ---------- */
 
-  const navStats = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Statistiques', href: '/contractor/stats/new', matchPrefix: ['/contractor/stats/new', '/contractor/stats'] },
-    { label: 'Historique', href: '/contractor/stats/history', matchPrefix: ['/contractor/stats/history'] },
-  ];
-
-  const items = menuMode === 'stats' ? navStats : navDefault;
-
+function NavSection({ title, children }) {
   return (
-    <nav className="px-4 space-y-2">
-      {items.map((i) => (
-        <NavLink
-          key={i.href}
-          href={i.href}
-          label={i.label}
-          matchPrefix={i.matchPrefix}
-          badge={i.badge}
-          onNavigate={onNavigate}
-        />
-      ))}
-    </nav>
+    <div>
+      <div className="px-2 text-[11px] font-semibold tracking-wide text-gray-400 dark:text-slate-400 uppercase mb-2">
+        {title}
+      </div>
+      <div className="space-y-1">{children}</div>
+    </div>
   );
 }
 
-/* ---- Toasts (auto-fade) ---- */
-function FlashToaster() {
-  const { flash = {} } = usePage().props;
-  const [visible, setVisible] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [type, setType] = useState('success');
-
-  useEffect(() => {
-    if (flash?.success) {
-      setMsg(flash.success);
-      setType('success');
-      setVisible(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (flash?.error) {
-      setMsg(flash.error);
-      setType('error');
-      setVisible(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [flash?.success, flash?.error]);
-
-  useEffect(() => {
-    if (!visible) return;
-    const t = setTimeout(() => setVisible(false), 3500);
-    return () => clearTimeout(t);
-  }, [visible]);
-
-  if (!msg) return null;
-
-  const base = 'rounded shadow-lg px-4 py-3 border relative transition-opacity duration-500';
-  const palette =
-    type === 'success'
-      ? 'bg-green-50 border-green-400 text-green-700'
-      : 'bg-red-50 border-red-400 text-red-700';
-
+function NavItem({ href, icon: Icon, label, badge }) {
+  const { url = (typeof window !== 'undefined' ? window.location.pathname : '/') } = usePage();
+  const active = url === href || (href !== '/' && url.startsWith(href));
   return (
-    <div
-      className={`fixed top-4 right-4 z-50 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      role={type === 'success' ? 'status' : 'alert'}
-      aria-live="polite"
+    <Link
+      href={href}
+      className={`flex items-center justify-between px-3 py-2 rounded-md text-sm
+        ${active
+          ? 'bg-blue-600 text-white'
+          : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
     >
-      <div className={`${base} ${palette}`}>
-        <button
-          type="button"
-          onClick={() => setVisible(false)}
-          className="absolute top-1 right-2 text-inherit/70"
-          aria-label="Fermer"
-        >
-          ×
-        </button>
-        <strong className="font-medium">{msg}</strong>
-      </div>
-    </div>
-  );
-}
-
-/* ---- NavLink with active & optional badge ---- */
-function NavLink({ href, label, matchPrefix, badge, onNavigate }) {
-  const { url = (typeof window !== 'undefined' ? window.location.pathname : '') } = usePage();
-  const prefixes = Array.isArray(matchPrefix)
-    ? matchPrefix
-    : matchPrefix
-    ? [matchPrefix]
-    : [];
-  const isActive = prefixes.length ? prefixes.some((p) => url.startsWith(p)) : url === href;
-
-  return (
-    <div className="relative">
+      <span className="flex items-center gap-2">
+        <Icon size={18} />
+        {label}
+      </span>
       {badge != null && (
-        <span
-          className="absolute -top-2 -right-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white shadow"
-          aria-label={`${badge} VODs restants`}
-          title={`${badge} VODs restants`}
-        >
-          {badge}
+        <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[11px] rounded-full bg-rose-500 text-white">
+          {badge > 99 ? '99+' : badge}
         </span>
       )}
-      <Link
-        href={href}
-        onClick={onNavigate}
-        className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive
-            ? 'bg-blue-100 text-blue-800 font-semibold'
-            : 'text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        {label}
-      </Link>
-    </div>
+    </Link>
   );
+}
+
+/* ---------- Header helpers ---------- */
+
+function NotifItem({ count, label, href, color = 'text-blue-600', showZero = true }) {
+  if (!showZero && !count) return null;
+  return (
+    <li>
+      <Link href={href} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700">
+        <span>{label}</span>
+        <span className={`text-xs font-semibold ${color}`}>{count}</span>
+      </Link>
+    </li>
+  );
+}
+
+function initials(name = '') {
+  const parts = name.trim().split(' ').filter(Boolean);
+  const a = (parts[0] || '').charAt(0);
+  const b = (parts[1] || '').charAt(0);
+  return (a + b).toUpperCase() || 'U';
 }

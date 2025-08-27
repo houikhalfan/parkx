@@ -2,62 +2,101 @@
 import { useForm } from '@inertiajs/react';
 
 export default function AdminLogin() {
-  const { data, setData, post, errors } = useForm({
+  const { data, setData, post, errors, processing } = useForm({
     email: '',
     password: '',
+    remember: false,
   });
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-
-  post('/admin/login', {
-    onSuccess: () => {
-      window.location.href = '/admin'; // or use route helper if you're using Ziggy
-    },
-    onError: (errors) => {
-      console.error(errors); // optional: useful during dev
-    },
-  });
-};
-
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    post('/admin/login', {
+      onSuccess: () => {
+        window.location.href = '/admin';
+      },
+    });
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded shadow w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-xl">
+        <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-10">
+          <h1 className="text-3xl font-semibold text-center">Connexion Admin</h1>
+          <p className="mt-2 text-center text-gray-500">
+            Connectez-vous à votre tableau de bord administrateur
+          </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={data.email}
-              onChange={(e) => setData('email', e.target.value)}
-              className="w-full px-3 py-2 border rounded"
-              required
-            />
-            {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-800 mb-1">
+                Adresse e-mail
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="admin@entreprise.com"
+                value={data.email}
+                onChange={(e) => setData('email', e.target.value)}
+                aria-invalid={!!errors.email}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                required
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-800 mb-1">
+                Mot de passe
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={data.password}
+                onChange={(e) => setData('password', e.target.value)}
+                aria-invalid={!!errors.password}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                required
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Remember me */}
+            <div className="flex items-center gap-2">
+              <input
+                id="remember"
+                type="checkbox"
+                checked={data.remember}
+                onChange={(e) => setData('remember', e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+              />
+              <label htmlFor="remember" className="text-sm text-gray-800 select-none">
+                Se souvenir de moi
+              </label>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={processing}
+              className="w-full rounded-lg bg-black text-white py-3 font-medium transition disabled:opacity-70"
+            >
+              {processing ? 'Connexion…' : 'Se connecter'}
+            </button>
+          </form>
+
+          {/* Forgot Password */}
+          <div className="mt-6 text-center">
+            <a href="#" className="text-sm text-gray-500 hover:text-gray-700 underline-offset-2">
+              Mot de passe oublié&nbsp;?
+            </a>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={data.password}
-              onChange={(e) => setData('password', e.target.value)}
-              className="w-full px-3 py-2 border rounded"
-              required
-            />
-            {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-          >
-            Log In
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );

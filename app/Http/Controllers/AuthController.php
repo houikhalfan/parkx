@@ -7,30 +7,24 @@ use App\Models\Contractor;
 use App\Models\Vod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $type = $request->input('type');
+        $type = $request->input('type', 'parkx'); // 'parkx' or 'contractor'
 
-        if (!in_array($type, ['contractor', 'parkx'])) {
-            throw ValidationException::withMessages([
-                'type' => 'Invalid user type specified.',
-            ]);
-        }
-
+        // Basic validation
         $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required'],
-            'name'     => $type === 'contractor' ? ['required', 'string'] : [],
         ]);
 
-        /** Contractor login (session-based) */
+        /* ---------------------------------------------------------
+         | Contractor login
+         * --------------------------------------------------------- */
         if ($type === 'contractor') {
             $contractor = Contractor::where('email', $request->email)->first();
 
@@ -46,22 +40,27 @@ class AuthController extends Controller
                 ]);
             }
 
-            // Persist contractor session (this is what the Stats pages check)
-            session(['contractor_id' => $contractor->id]);
+            // ✅ log the user into the contractor guard
+            Auth::guard('contractor')->login($contractor);
+            $request->session()->regenerate();
 
-            return redirect()->route('dashboard');
+            return redirect()->route('contractant.home'); // e.g. /contractant
         }
 
-        /** ParkX login (Laravel Auth) */
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        /* ---------------------------------------------------------
+         | ParkX (standard) login
+         * --------------------------------------------------------- */
+        if (!Auth::guard('web')->attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
                 'email' => 'Invalid ParkX credentials.',
             ]);
         }
 
-        // Quota flash (unchanged)
+        $request->session()->regenerate();
+
+        // Quota flash (based on records created this month)
         $user  = Auth::user();
-        $quota = (int)($user->vods_quota ?? 0);
+        $quota = (int) ($user->vods_quota ?? 0);
 
         $start = now()->startOfMonth()->startOfDay();
         $end   = now()->endOfMonth()->endOfDay();
@@ -75,25 +74,15 @@ class AuthController extends Controller
 
         if ($quota > 0) {
             if ($remaining > 0) {
-                $request->session()->flash(
-                    'success',
-                    "Il vous reste {$remaining} VOD(s) à soumettre ce mois-ci. Jours restants : {$daysLeft}."
-                );
+                session()->flash('success', "Il vous reste {$remaining} VOD(s) à soumettre ce mois-ci. Jours restants : {$daysLeft}.");
             } else {
                 $next = now()->startOfMonth()->addMonth()->format('d/m/Y');
-                $request->session()->flash(
-                    'success',
-                    "Quota mensuel atteint. Le formulaire VODS est bloqué jusqu’au {$next}."
-                );
+                session()->flash('success', "Quota mensuel atteint. Le formulaire VODS est bloqué jusqu’au {$next}.");
             }
         }
 
-        $request->session()->regenerate();
-
-        // Update last login without triggering intelephense noise
-        if ($user && Schema::hasColumn('users', 'last_login_at')) {
-            DB::table('users')->where('id', $user->id)->update(['last_login_at' => now()]);
-        }
+        // ✅ stamp last login
+        $user->forceFill(['last_login_at' => now()])->save();
 
         return redirect()->intended('/dashboard');
     }
@@ -101,15 +90,15 @@ class AuthController extends Controller
     public function contractorRegister(Request $request)
     {
         $validated = $request->validate([
-            'name'         => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:contractors,email',
-            'password'     => 'required|string|confirmed|min:8',
-            'phone'        => 'nullable|string|max:20',
-            'company_name' => 'nullable|string|max:255',
-            'role'         => 'nullable|string|max:100',
+            'name'                  => 'required|string|max:255',
+            'email'                 => 'required|string|email|max:255|unique:contractors,email',
+            'password'              => 'required|string|confirmed|min:8',
+            'phone'                 => 'nullable|string|max:20',
+            'company_name'          => 'nullable|string|max:255',
+            'role'                  => 'nullable|string|max:100',
         ]);
 
-        $contractor = Contractor::create([
+        Contractor::create([
             'name'         => $validated['name'],
             'email'        => $validated['email'],
             'password'     => bcrypt($validated['password']),

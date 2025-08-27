@@ -1,5 +1,5 @@
 // resources/js/Pages/Welcome.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -18,7 +18,7 @@ const InputField = ({
 }) => (
   <div className="space-y-1">
     {label && (
-      <label className="text-sm text-gray-700 font-medium" htmlFor={name}>
+      <label className="text-sm text-gray-700 dark:text-slate-200 font-medium" htmlFor={name}>
         {label}
       </label>
     )}
@@ -31,18 +31,20 @@ const InputField = ({
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className={`w-full px-4 py-3 bg-gray-50 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-          error ? 'border-red-300' : 'border-gray-200'
-        }`}
+        className={`w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600
+                    rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      error ? 'border-red-300' : ''
+                    }`}
       />
       {showToggle && (
         <button
           type="button"
           onClick={onToggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200"
           aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
         >
-          {show ? <EyeOff size={18} /> : <Eye size={18} />}
+          {show ? <Eye size={18} /> : <EyeOff size={18} />}
         </button>
       )}
     </div>
@@ -51,6 +53,14 @@ const InputField = ({
 );
 
 export default function Welcome() {
+  // ✅ Apply saved theme from Dashboard (dark/light)
+  useEffect(() => {
+    const stored = localStorage.getItem('parkx-theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const next = stored || (prefersDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', next === 'dark');
+  }, []);
+
   const [activeTab, setActiveTab] = useState('parkx'); // 'parkx' | 'contractor'
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -58,9 +68,9 @@ export default function Welcome() {
   const [showSignup, setShowSignup] = useState(false);
 
   const { props } = usePage();
-  const flashMessage = props?.flash?.message;
+  const flashMessage = props?.flash?.message || props?.flash?.success || props?.flash?.info;
 
-  // Random hero image (cached list)
+  // Random hero image
   const backgroundImages = useMemo(() => ['/images/11s.jpeg', '/images/2.jpg'], []);
   const backgroundImage = useMemo(
     () => backgroundImages[Math.floor(Math.random() * backgroundImages.length)],
@@ -81,18 +91,20 @@ export default function Welcome() {
 
   const handleLogin = (e) => {
     e.preventDefault();
+
     const payload = {
       email: loginForm.data.email,
       password: loginForm.data.password,
       type: activeTab, // 'parkx' or 'contractor'
-      // backend requires 'name' only for contractor; send a stub if needed
-      name: activeTab === 'contractor' ? 'Contractor' : undefined,
     };
 
     router.post('/login', payload, {
-      onSuccess: () => router.visit('/dashboard'),
-      onError: () => {
-        // errors are shown inline by loginForm.errors
+      onSuccess: () => {
+        if (activeTab === 'contractor') {
+          router.visit('/contractant');
+        } else {
+          router.visit('/dashboard');
+        }
       },
       preserveScroll: true,
     });
@@ -111,10 +123,9 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white">
-      {/* Left — Hero (stacked above on mobile, side-by-side on md+) */}
+    <div className="min-h-screen flex flex-col md:flex-row bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+      {/* Left — Hero */}
       <div className="relative w-full md:w-1/2 lg:w-2/3">
-        {/* Use an img for better object-fit behavior */}
         <img
           src={backgroundImage}
           alt=""
@@ -136,16 +147,20 @@ export default function Welcome() {
           <div className="mb-5 text-center">
             <img src="/images/logo.png" alt="logo" className="mx-auto h-12 w-auto mb-3" />
             <h2 className="text-2xl font-bold mb-1">Connexion</h2>
-            <p className="text-gray-500 text-sm">Connectez-vous en tant qu’utilisateur ou contractant</p>
+            <p className="text-gray-500 dark:text-slate-300 text-sm">
+              Connectez-vous en tant qu’utilisateur ou contractant
+            </p>
           </div>
 
           {/* Tabs */}
-          <div className="flex bg-gray-100 rounded-lg p-1 mb-6" role="tablist" aria-label="Type de compte">
+          <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1 mb-6" role="tablist" aria-label="Type de compte">
             <button
               role="tab"
               aria-selected={activeTab === 'parkx'}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-                activeTab === 'parkx' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                activeTab === 'parkx'
+                  ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-300'
               }`}
               onClick={() => {
                 setActiveTab('parkx');
@@ -158,7 +173,9 @@ export default function Welcome() {
               role="tab"
               aria-selected={activeTab === 'contractor'}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
-                activeTab === 'contractor' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                activeTab === 'contractor'
+                  ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-600 dark:text-slate-300'
               }`}
               onClick={() => setActiveTab('contractor')}
             >
@@ -168,7 +185,7 @@ export default function Welcome() {
 
           {/* Flash message */}
           {flashMessage && (
-            <div className="mb-4 px-4 py-2 text-green-800 bg-green-100 border border-green-200 rounded text-center">
+            <div className="mb-4 px-4 py-2 text-green-800 bg-green-100 border border-green-200 rounded text-center dark:text-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800">
               {flashMessage}
             </div>
           )}
@@ -207,9 +224,8 @@ export default function Welcome() {
                 {loginForm.processing ? 'Connexion…' : 'Se connecter'}
               </button>
 
-              {/* Inline generic error (if the backend returns a top-level message) */}
               {loginForm.errors?.type && (
-                <p className="text-xs text-red-600 text-center">{loginForm.errors.type}</p>
+                <p className="text-xs text-red-600 text-center mt-2">{loginForm.errors.type}</p>
               )}
             </form>
           ) : (
@@ -276,13 +292,11 @@ export default function Welcome() {
               />
 
               <div>
-                <label className="text-sm text-gray-700 font-medium">Rôle</label>
+                <label className="text-sm text-gray-700 dark:text-slate-200 font-medium">Rôle</label>
                 <select
                   value={signupForm.data.role}
                   onChange={(e) => signupForm.setData('role', e.target.value)}
-                  className={`mt-1 w-full px-3 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    signupForm.errors?.role ? 'border-red-300' : 'border-gray-200'
-                  }`}
+                  className="mt-1 w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Sélectionner un rôle</option>
                   <option value="manager">Manager</option>
@@ -325,7 +339,9 @@ export default function Welcome() {
             )}
           </div>
 
-          <p className="text-xs text-gray-400 text-center mt-6">ParkX — Parcs Industriels Durables.</p>
+          <p className="text-xs text-gray-400 dark:text-slate-400 text-center mt-6">
+            ParkX — Parcs Industriels Durables.
+          </p>
         </div>
       </div>
     </div>
