@@ -9,9 +9,9 @@ use App\Models\Admin;
 use App\Models\Contractor;
 use App\Models\User;
 use App\Models\Vod;
+use App\Models\Site; // ⬅️ add this import
 use Inertia\Inertia;
 use Carbon\Carbon;
-
 
 class AdminController extends Controller
 {
@@ -36,40 +36,50 @@ class AdminController extends Controller
         return Inertia::location(route('admin.home'));
     }
 
-  
+    public function dashboard()
+    {
+        // Sites list for the <select> and for id->name mapping on the table
+        $sites = Site::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-public function dashboard()
-{
-    return Inertia::render('Admin/Dashboard', [
-        'users' => User::orderBy('created_at','desc')->get(['id','name','email','vods_quota','created_at']),
-        'pendingContractors' => Contractor::where('is_approved', false)->orderBy('created_at','desc')->get(),
-        'approvedContractors' => Contractor::where('is_approved', true)->orderBy('created_at','desc')->get(),
-        'csrf_token' => csrf_token(),
-    ]);
-}
+        return Inertia::render('Admin/Dashboard', [
+            // ⬇️ include site_id so the UI can display the site name
+            'users' => User::orderBy('created_at', 'desc')
+                ->get(['id', 'name', 'email', 'vods_quota', 'created_at', 'site_id']),
 
+            'pendingContractors'  => Contractor::where('is_approved', false)
+                ->orderBy('created_at', 'desc')
+                ->get(),
+
+            'approvedContractors' => Contractor::where('is_approved', true)
+                ->orderBy('created_at', 'desc')
+                ->get(),
+
+            'sites'      => $sites,
+            'csrf_token' => csrf_token(),
+            'url'        => request()->getRequestUri(),
+        ]);
+    }
 
     // Create ParkX employee
     public function createParkxUser(Request $request)
     {
-        \Log::info('👤 Creating Parkx user', $request->all());
-
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+        $data = $request->validate([
+            'name'                  => ['required','string','max:255'],
+            'email'                 => ['required','email','max:255','unique:users,email'],
+            'password'              => ['required','string','min:8','confirmed'],
+            'site_id'               => ['nullable','exists:sites,id'], // ✅ new
         ]);
 
-        $user = User::create([
-            'name'        => $validated['name'],
-            'email'       => $validated['email'],
-            'password'    => bcrypt($validated['password']),
-            'vods_quota'  => 0,
+        User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => bcrypt($data['password']),
+            'site_id'  => $data['site_id'] ?? null, // ✅ bind to site
         ]);
 
-        \Log::info('✅ User created:', $user->toArray());
-
-        return back()->with('success', 'User created successfully.');
+        return back()->with('success', 'Utilisateur créé.');
     }
 
     // Update ParkX user's VOD quota
@@ -122,14 +132,14 @@ public function dashboard()
         return back()->with('success', 'Contractor account deleted.');
     }
 
-    // Admin Home (French month + completed this month = inserted this month)
+    // Admin Home
     public function home()
     {
         // KPI counts
         $totalUsers       = User::count();
         $totalContractors = Contractor::count();
 
-        // VODs "terminés" = rows inserted this month (created_at in current month)
+        // VODs "terminés" = rows inserted this month
         $vodsCompleted = Vod::whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->count();
@@ -143,7 +153,7 @@ public function dashboard()
             ->limit(8)
             ->get(['id','name','email','last_login_at']);
 
-        // Pending contractors (list + count for sidebar badge)
+        // Pending contractors
         $pendingApprovals = Contractor::where('is_approved', false)
             ->orderByDesc('created_at')
             ->limit(3)
@@ -151,7 +161,7 @@ public function dashboard()
 
         $pendingCount = Contractor::where('is_approved', false)->count();
 
-        // French month label (e.g., "août 2025")
+        // French month label
         $monthLabel = Carbon::now()->locale('fr')->isoFormat('MMMM YYYY');
 
         return Inertia::render('Admin/Home', [

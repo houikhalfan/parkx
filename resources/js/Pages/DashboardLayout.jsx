@@ -108,12 +108,7 @@ export default function DashboardLayout({ children, title }) {
                   Notifications
                 </div>
                 <ul className="max-h-72 overflow-auto text-sm">
-                  <NotifItem
-                    count={assigned}
-                    label="Papiers assignés à signer"
-                    href="/signatures/inbox"
-                    color="text-blue-600"
-                  />
+                  <NotifItem count={assigned} label="Papiers assignés à signer" href={route('employee.signatures.index', {}, false)} color="text-blue-600" />
                   <NotifItem
                     count={vodsRemaining}
                     label="VODs restants ce mois"
@@ -165,12 +160,7 @@ export default function DashboardLayout({ children, title }) {
                 label="Notifications"
                 badge={totalNotifs || null}
               />
-              <NavItem
-                href="/signatures/inbox"
-                icon={FileSignature}
-                label="Papiers assignés"
-                badge={assigned || null}
-              />
+             <NavItem href={route('employee.signatures.index', {}, false)} icon={FileSignature} label="Papiers assignés" badge={assigned || null} />
             </NavSection>
           </nav>
         </aside>
@@ -206,12 +196,7 @@ export default function DashboardLayout({ children, title }) {
                     label="Notifications"
                     badge={totalNotifs || null}
                   />
-                  <NavItem
-                    href="/signatures/inbox"
-                    icon={FileSignature}
-                    label="Papiers assignés"
-                    badge={assigned || null}
-                  />
+                <NavItem href={route('employee.signatures.index', {}, false)} icon={FileSignature} label="Papiers assignés" badge={assigned || null} />
                 </NavSection>
               </nav>
             </aside>

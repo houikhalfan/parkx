@@ -13,6 +13,8 @@
 
         <!-- Scripts -->
         @routes
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
         @inertiaHead

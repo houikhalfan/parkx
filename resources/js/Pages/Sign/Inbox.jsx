@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePage, Link } from '@inertiajs/react';
+import DashboardLayout from '../DashboardLayout';
 
 export default function Inbox() {
   const { items = [] } = usePage().props;

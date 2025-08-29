@@ -1,23 +1,23 @@
-// resources/js/Pages/Admin/Signatures/Index.jsx (ou AdminSignaturesIndex.jsx)
+// resources/js/Pages/Employee/Signatures/Index.jsx
 import React from 'react';
 import { usePage, Link } from '@inertiajs/react';
-import AdminLayout from "@/Layouts/AdminLayout";
+import DashboardLayout from '@/Pages/DashboardLayout'; // ← adjust path if you placed it elsewhere
 
-function AdminSignaturesIndex() {
-  const { items = { data: [], links: [] }, q = '', s = '' } = usePage().props;
+function EmployeeSignaturesIndex() {
+  const { items = { data: [], links: [] }, q = '', s = '' } = usePage().props || {};
 
   return (
-    <div className="-m-4 md:-m-8 bg-white min-h-[calc(100vh-3.5rem)] p-4 md:p-8">
-      {/* En-tête */}
-      <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Demandes de signature</h1>
-        <p className="text-sm md:text-base text-gray-600 mt-1">
-          Recherchez, filtrez et suivez les demandes de signature.
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">Papiers assignés</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Recherchez, filtrez et suivez les demandes qui vous sont assignées.
         </p>
       </div>
 
-      {/* Filtres */}
-      <form method="GET" className="mb-5 flex flex-wrap items-center gap-2">
+      {/* Filters */}
+      <form method="GET" className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:w-80">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="7" /><path d="M21 21l-3.6-3.6" />
@@ -47,8 +47,8 @@ function AdminSignaturesIndex() {
         </button>
       </form>
 
-      {/* Tableau */}
-      <div className="card-frame overflow-hidden">
+      {/* Table */}
+      <div className="overflow-hidden border rounded-xl">
         <div className="overflow-x-auto">
           <table className="min-w-[900px] w-full text-sm">
             <thead className="sticky top-0 z-10 bg-white">
@@ -88,7 +88,7 @@ function AdminSignaturesIndex() {
                   <td className="py-3 pl-4 pr-4 text-right">
                     <Link
                       className="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
-                      href={route('admin.signatures.show', r.id)}
+                      href={route('employee.signatures.show', r.id)}
                     >
                       Ouvrir
                     </Link>
@@ -100,9 +100,9 @@ function AdminSignaturesIndex() {
         </div>
       </div>
 
-      {/* Pagination (libellés FR) */}
+      {/* Pagination */}
       {items.links?.length > 0 && (
-        <div className="mt-5 flex flex-wrap items-center gap-2 justify-end text-sm">
+        <div className="flex flex-wrap items-center gap-2 justify-end text-sm">
           {items.links.map((l, i) => (
             <Link
               key={i}
@@ -116,36 +116,18 @@ function AdminSignaturesIndex() {
           ))}
         </div>
       )}
-
-      {/* Style du cadre (même look que vos cartes KPI) */}
-      <style>{`
-        .card-frame {
-          background-color: #ffffff;
-          border: 1px solid rgba(0,0,0,0.08);
-          border-radius: 20px;
-          box-shadow:
-            0 1px 0 rgba(0,0,0,0.04),
-            0 8px 24px -12px rgba(0,0,0,0.18);
-        }
-      `}</style>
     </div>
   );
 }
 
-/* --- helpers --- */
+/* helpers */
 function Th({ children, className = "" }) {
-  return (
-    <th className={`px-4 py-3 text-xs font-medium uppercase tracking-wide ${className}`}>
-      {children}
-    </th>
-  );
+  return <th className={`px-4 py-3 text-xs font-medium uppercase tracking-wide ${className}`}>{children}</th>;
 }
 function Td({ children, className = "" }) {
   return <td className={`px-4 py-3 align-middle ${className}`}>{children}</td>;
 }
-
 function StatusBadge({ s }) {
-  // mappe le statut brut -> styles + libellé FR
   const map = {
     pending: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En attente' },
     signed:  { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Signé' },
@@ -159,13 +141,15 @@ function StatusBadge({ s }) {
     </span>
   );
 }
-
 function localizePagination(label) {
-  // Traduire les libellés de pagination typiques de Laravel
   return String(label)
     .replace(/Previous|&laquo;\s*Previous/gi, 'Précédent')
     .replace(/Next|Next\s*&raquo;/gi, 'Suivant');
 }
 
-AdminSignaturesIndex.layout = (page) => <AdminLayout>{page}</AdminLayout>;
-export default AdminSignaturesIndex;
+/* Inertia layout hook */
+EmployeeSignaturesIndex.layout = (page) => (
+  <DashboardLayout title="Papiers assignés">{page}</DashboardLayout>
+);
+
+export default EmployeeSignaturesIndex;

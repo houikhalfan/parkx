@@ -13,7 +13,8 @@ class SignatureRequest extends Model
         'message',
         'original_path',
         'signed_path',
-        'status',       // 'pending' | 'signed' | 'rejected'
+        'status', 
+        'site_id','assigned_user_id',   
         'signed_at',
         'rejected_at',
         'meta',
@@ -25,10 +26,8 @@ class SignatureRequest extends Model
         'meta'        => 'array',
     ];
 
-    public function contractor()
-    {
-        return $this->belongsTo(Contractor::class);
-    }
+      public function contractor() { return $this->belongsTo(\App\Models\Contractor::class); }
+
 
     public function admin()
     {
@@ -51,6 +50,7 @@ class SignatureRequest extends Model
     return $this->hasMany(\App\Models\SignatureSigner::class);
 }
 public function events() { return $this->hasMany(\App\Models\SignatureEvent::class); }
-public function assignedUser() { return $this->belongsTo(\App\Models\User::class, 'assigned_user_id'); }
+public function site() { return $this->belongsTo(\App\Models\Site::class); }
+    public function assignedUser() { return $this->belongsTo(\App\Models\User::class, 'assigned_user_id'); }
 
 }

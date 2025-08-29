@@ -10,9 +10,10 @@ function AdminDashboard() {
     approvedContractors = [],
     csrf_token,
     url,
+    sites = [],
   } = usePage().props;
 
-  // open the same two tabs you used before via ?tab=...
+  // lit l’onglet depuis l’URL (?tab=...)
   const getTabFromUrl = () => {
     if (typeof window === "undefined") return "parkx";
     const qs = new URLSearchParams(window.location.search);
@@ -22,28 +23,13 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState(getTabFromUrl());
   useEffect(() => setActiveTab(getTabFromUrl()), [url]);
 
+  // Trouve le nom du site pour un user
+  const siteNameFor = (u) =>
+    u?.site?.name ??
+    (u?.site_id ? (sites.find((s) => s.id === u.site_id)?.name || "—") : "—");
+
   return (
     <div>
-      {/* --- Tabs header --- */}
-      <div className="mb-6 flex items-center gap-2">
-        <Link
-          href={route("admin.dashboard")}
-          className={`px-3 py-1.5 rounded ${
-            activeTab === "parkx" ? "bg-blue-600 text-white" : "bg-white border"
-          }`}
-        >
-          Comptes ParkX
-        </Link>
-        <Link
-          href={`${route("admin.dashboard")}?tab=contractors`}
-          className={`px-3 py-1.5 rounded ${
-            activeTab === "contractors" ? "bg-blue-600 text-white" : "bg-white border"
-          }`}
-        >
-          Comptes contractants
-        </Link>
-      </div>
-
       {/* --- PARKX USERS TAB --- */}
       {activeTab === "parkx" && (
         <>
@@ -65,6 +51,23 @@ function AdminDashboard() {
                 required
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Site</label>
+              <select
+                name="site_id"
+                className="w-full px-4 py-2 border rounded dark:bg-slate-900 dark:border-slate-700"
+                defaultValue=""
+              >
+                <option value="">— Aucun —</option>
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
@@ -113,6 +116,7 @@ function AdminDashboard() {
                 <tr className="bg-gray-100 text-left uppercase text-gray-600">
                   <th className="px-4 py-2">Nom</th>
                   <th className="px-4 py-2">Email</th>
+                  <th className="px-4 py-2">Site</th>{/* <-- nouveau */}
                   <th className="px-4 py-2">VODs à rendre</th>
                   <th className="px-4 py-2">Créé le</th>
                   <th className="px-4 py-2">Actions</th>
@@ -121,7 +125,7 @@ function AdminDashboard() {
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-6 text-gray-600" colSpan={5}>
+                    <td className="px-4 py-6 text-gray-600" colSpan={6}>
                       Aucun utilisateur.
                     </td>
                   </tr>
@@ -130,6 +134,7 @@ function AdminDashboard() {
                     <tr key={u.id} className="border-t">
                       <td className="px-4 py-2">{u.name}</td>
                       <td className="px-4 py-2">{u.email}</td>
+                      <td className="px-4 py-2">{siteNameFor(u)}</td>{/* <-- affichage */}
                       <td className="px-4 py-2">
                         <form
                           method="POST"

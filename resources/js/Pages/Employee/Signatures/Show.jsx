@@ -1,40 +1,50 @@
-// resources/js/Pages/Admin/Signatures/Show.jsx (ou AdminSignShow.jsx)
 import React from 'react';
-import { useForm, usePage, Link } from '@inertiajs/react';
-import AdminLayout from "@/Layouts/AdminLayout";
+import { useForm, usePage, Link, router } from '@inertiajs/react';
+import DashboardLayout from '@/Pages/DashboardLayout';
 
-function AdminSignShow() {
-  const { req, csrf_token, users = [] } = usePage().props;
+export default function EmployeeSignShow() {
+  const { req, csrf_token } = usePage().props;
 
   const approveForm = useForm({ signed_file: null, comment: '' });
   const rejectForm  = useForm({ reason: '' });
-  const assignForm  = useForm({ user_id: '' });
+
+  const sweet = (title, text, icon='success') => {
+    if (window.Swal) {
+      return window.Swal.fire({ title, text, icon, confirmButtonText: 'OK' });
+    }
+    alert(title + (text ? '\n' + text : ''));
+    return Promise.resolve();
+  };
 
   const approve = (e) => {
     e.preventDefault();
-    approveForm.post(route('admin.signatures.approve', req.id), { forceFormData: true });
+    approveForm.post(route('employee.signatures.approve', req.id), {
+      forceFormData: true,
+      onSuccess: async () => {
+        await sweet('Document validé', 'Le contractant recevra la version signée.');
+        router.visit(route('employee.signatures.index'));
+      }
+    });
   };
+
   const reject = (e) => {
     e.preventDefault();
-    rejectForm.post(route('admin.signatures.reject', req.id));
-  };
-  const assign = (e) => {
-    e.preventDefault();
-    assignForm.post(route('admin.signatures.assign', req.id));
+    rejectForm.post(route('employee.signatures.reject', req.id), {
+      onSuccess: async () => {
+        await sweet('Demande refusée', 'Le contractant verra votre commentaire.');
+        router.visit(route('employee.signatures.index'));
+      }
+    });
   };
 
   return (
-    // Plein-plateau + fond blanc (comme la liste)
     <div className="-m-4 md:-m-8 bg-white min-h-[calc(100vh-3.5rem)] p-4 md:p-8">
-      {/* En-tête de page (discret) */}
       <div className="mb-4">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Demande de signature</h1>
-        <p className="text-sm text-gray-600">Détail de la demande et actions.</p>
+        <p className="text-sm text-gray-600">Détail de la demande et actions du responsable.</p>
       </div>
 
-      {/* Carte principale */}
       <div className="card-frame">
-        {/* Header de la carte */}
         <div className="flex items-start justify-between gap-6 border-b p-6">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
@@ -54,52 +64,20 @@ function AdminSignShow() {
               {req.original_path && (
                 <a
                   className="inline-flex items-center rounded-lg border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  href={route('admin.signatures.download.original', req.id)}
+                  href={route('employee.signatures.download.original', req.id)}
                 >
                   Télécharger l’original
                 </a>
               )}
               {req.signed_path && (
                 <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-200">
-                  Document signé
+                  Document déjà renvoyé signé
                 </span>
               )}
             </div>
           </div>
-
-          {/* Assigner + Signer maintenant */}
-          <div className="shrink-0">
-            <form onSubmit={assign} className="flex items-center gap-2">
-              <label className="sr-only" htmlFor="assignee">Assigner à</label>
-              <select
-                id="assignee"
-                className="min-w-[260px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-                value={assignForm.data.user_id}
-                onChange={(e)=>assignForm.setData('user_id', e.target.value)}
-                required
-              >
-                <option value="">Choisir un employé…</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                ))}
-              </select>
-              <button className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-                Assigner
-              </button>
-            </form>
-
-            <div className="mt-2 text-right">
-              <Link
-                href={route('admin.signatures.sign.form', req.id)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Signer maintenant (admin)
-              </Link>
-            </div>
-          </div>
         </div>
 
-        {/* Corps de la carte */}
         <div className="p-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Valider */}
@@ -107,9 +85,7 @@ function AdminSignShow() {
               <h3 className="text-base font-semibold">Valider (joindre le document signé)</h3>
               <input type="hidden" name="_token" value={csrf_token} />
 
-              <label className="mt-3 block text-sm font-medium text-gray-700">
-                Fichier signé (PDF)
-              </label>
+              <label className="mt-3 block text-sm font-medium text-gray-700">Fichier signé (PDF)</label>
               <input
                 type="file"
                 accept="application/pdf"
@@ -124,7 +100,7 @@ function AdminSignShow() {
               <label className="mt-4 block text-sm font-medium text-gray-700">Commentaire (optionnel)</label>
               <textarea
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-                placeholder="Ajouter un commentaire…"
+                placeholder="Message pour le contractant…"
                 rows={3}
                 value={approveForm.data.comment}
                 onChange={(e) => approveForm.setData('comment', e.target.value)}
@@ -143,9 +119,7 @@ function AdminSignShow() {
               <h3 className="text-base font-semibold">Refuser</h3>
               <input type="hidden" name="_token" value={csrf_token} />
 
-              <label className="mt-3 block text-sm font-medium text-gray-700">
-                Raison du refus
-              </label>
+              <label className="mt-3 block text-sm font-medium text-gray-700">Raison du refus</label>
               <textarea
                 className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
                 placeholder="Expliquez brièvement la raison…"
@@ -167,22 +141,22 @@ function AdminSignShow() {
             </form>
           </div>
 
-          {/* Commentaires */}
+          {/* Historique des commentaires */}
           <section className="mt-8">
             <h3 className="text-base font-semibold">Commentaires</h3>
 
-            {req.request_comments?.length ? (
+            {req.requestComments?.length ? (
               <ul className="mt-3 space-y-3">
-                {req.request_comments.map((c) => (
+                {req.requestComments.map((c) => (
                   <li key={c.id} className="rounded-xl border bg-gray-50 p-4">
                     <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
                       <span className="inline-flex items-center gap-2">
                         <span
                           className={`h-2 w-2 rounded-full ${
-                            (c.author_type?.includes('Admin')) ? 'bg-gray-900' : 'bg-blue-600'
+                            (c.author_type?.includes('User')) ? 'bg-blue-600' : 'bg-gray-900'
                           }`}
                         />
-                        {(c.author_type?.includes('Admin') ? 'Admin' : 'Contractant')}
+                        {(c.author_type?.includes('User') ? 'Responsable' : 'Contractant')}
                       </span>
                       <span>
                         {new Date(c.created_at).toLocaleString('fr-FR', {
@@ -203,20 +177,17 @@ function AdminSignShow() {
       </div>
 
       <div className="mt-4">
-        <Link href={route('admin.signatures.index')} className="text-sm text-gray-600 hover:underline">
-          ← Retour aux demandes
+        <Link href={route('employee.signatures.index')} className="text-sm text-gray-600 hover:underline">
+          ← Retour à la liste
         </Link>
       </div>
 
-      {/* Style de cadre cohérent avec le reste du back-office */}
       <style>{`
         .card-frame {
           background-color: #ffffff;
           border: 1px solid rgba(0,0,0,0.08);
           border-radius: 20px;
-          box-shadow:
-            0 1px 0 rgba(0,0,0,0.04),
-            0 8px 24px -12px rgba(0,0,0,0.18);
+          box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 8px 24px -12px rgba(0,0,0,0.18);
         }
       `}</style>
     </div>
@@ -224,22 +195,15 @@ function AdminSignShow() {
 }
 
 function StatusBadge({ s }) {
-  // styles + libellé FR
   const map = {
-    submitted: { bg: 'bg-blue-50',   text: 'text-blue-700',   ring: 'ring-blue-200',   label: 'Soumise' },
-    assigned:  { bg: 'bg-amber-50',  text: 'text-amber-700',  ring: 'ring-amber-200',  label: 'Assignée' },
-    signed:    { bg: 'bg-green-50',  text: 'text-green-700',  ring: 'ring-green-200',  label: 'Signée' },
-    rejected:  { bg: 'bg-red-50',    text: 'text-red-700',    ring: 'ring-red-200',    label: 'Rejetée' },
-    pending:   { bg: 'bg-gray-100',  text: 'text-gray-700',   ring: 'ring-gray-200',   label: 'En attente' },
+    pending:  { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En attente' },
+    signed:   { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Signé' },
+    rejected: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Rejeté' },
   };
-  const m = map[s] || { bg: 'bg-gray-100', text: 'text-gray-700', ring: 'ring-gray-200', label: s || '—' };
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${m.bg} ${m.text} ${m.ring}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current/70" />
-      {m.label}
-    </span>
-  );
+  const m = map[s] || { bg: 'bg-gray-100', text: 'text-gray-700', label: s || '—' };
+  return <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium ${m.bg} ${m.text}`}>
+    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />{m.label}
+  </span>;
 }
 
-AdminSignShow.layout = (page) => <AdminLayout>{page}</AdminLayout>;
-export default AdminSignShow;
+EmployeeSignShow.layout = (page) => <DashboardLayout title="Papiers assignés">{page}</DashboardLayout>;

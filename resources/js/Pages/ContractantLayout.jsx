@@ -8,7 +8,8 @@ export default function ContractantLayout({ children }) {
     { href: '/contractant/parapheur',    label: 'Paraphe & Signature' },
     { href: '/contractant/documents',    label: 'Documents' },
     { href: '/contractant/statistiques', label: 'Statistiques' },
-    { href: '/contractant/vods',         label: 'VODs' }, // add route when ready
+    { href: '/contractant/vods',         label: 'VODs' }, 
+    // add route when ready
   ];
 
   const isActive = (href) => url.startsWith(href);

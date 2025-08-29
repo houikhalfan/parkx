@@ -16,6 +16,7 @@ class User extends Authenticatable
         'password',
         'vods_quota', // 👈 Ajout du champ quota
         'vods_target_per_month',
+        'site_id',
 
     ];
 
@@ -50,5 +51,8 @@ public function getVodsToCompleteAttribute()
 
     return max(0, $target - $doneThisMonth);
 }
-
+public function site()
+{
+    return $this->belongsTo(\App\Models\Site::class);
+}
 }
