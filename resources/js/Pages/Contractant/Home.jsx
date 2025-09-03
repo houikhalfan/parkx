@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
 import { Package } from 'lucide-react'; // Fallback icon
 
 function CardIcon({ img, size = 40 }) {
@@ -25,6 +26,46 @@ function CardIcon({ img, size = 40 }) {
 export default function ContractorHome() {
   const { auth } = usePage().props;
   const name = auth?.contractor?.name ?? auth?.user?.name ?? 'Bienvenue';
+=======
+import { route } from 'ziggy-js';
+
+
+export default function ContractorHome() {
+const { auth } = usePage().props;
+const name = auth?.contractor?.name ?? auth?.user?.name ?? 'Bienvenue';
+
+ const cards = [
+  {
+    title: 'VODs',
+    desc: 'Créer et suivre vos Visites Observation & Ronde.',
+
+   href: '/contractant/vods', // <-- only if you add this route
+    img: '/images/form.png',
+    accent: 'from-blue-500/10 to-blue-500/0',
+  },
+  {
+    title: 'Documents',
+    desc: 'Consulter et télécharger les documents partagés.',
+   href: '/contractant/documents',
+    img: '/images/doc.png',
+    accent: 'from-emerald-500/10 to-emerald-500/0',
+  },
+  {
+    title: 'Statistiques',
+    desc: 'Visualiser vos indicateurs clés et progrès.',
+   href: route('contractant.statistiques.show'),
+    img: '/images/stat.png',
+    accent: 'from-amber-500/10 to-amber-500/0',
+  },
+  {
+    title: 'Paraphe & Signature',
+    desc: 'Déposez vos pièces pour signature par l\'administration.',
+   href: '/contractant/parapheur', // ✅ matches your registered routes
+    img: '/images/agreement.png',
+    accent: 'from-fuchsia-500/10 to-fuchsia-500/0',
+  },
+];
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
 
   const cards = [
     {
@@ -69,13 +110,28 @@ export default function ContractorHome() {
       {/* Hero */}
       <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 text-white">
         <div className="max-w-6xl mx-auto px-6 py-10 md:py-14">
-          <p className="text-sm/6 text-white/80">Espace Contractant</p>
-          <h1 className="mt-1 text-2xl md:text-4xl font-semibold tracking-tight">
-            {name}, accédez à vos services ParkX
-          </h1>
-          <p className="mt-3 text-white/70 max-w-2xl">
-            Outils, transparence, collaboration — tout ce qu’il faut pour avancer rapidement.
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm/6 text-white/80">Espace Contractant</p>
+              <h1 className="mt-1 text-2xl md:text-4xl font-semibold tracking-tight">
+                {name}, accédez à vos services ParkX
+              </h1>
+              <p className="mt-3 text-white/70 max-w-2xl">
+                Outils, transparence, collaboration — tout ce qu'il faut pour avancer rapidement.
+              </p>
+            </div>
+            
+            {/* Logout Button */}
+            <button
+              onClick={() => router.post(route('contractant.logout'))}
+              className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Se déconnecter
+            </button>
+          </div>
         </div>
 
         {/* Decorative wave */}
@@ -131,8 +187,13 @@ export default function ContractorHome() {
         {/* Quick help */}
         <section className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="rounded-2xl bg-white border p-5">
+<<<<<<< HEAD
             <h3 className="font-semibold text-[1.05rem] md:text-lg">Notifications</h3>
             <p className="mt-2 text-sm text-gray-600">Vos alertes et messages importants s’affichent ici.</p>
+=======
+            <h3 className="font-semibold">Notifications</h3>
+            <p className="mt-2 text-sm text-gray-600">Vos alertes et messages importants s'affichent ici.</p>
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
           </div>
           <div className="rounded-2xl bg-white border p-5">
             <h3 className="font-semibold text-[1.05rem] md:text-lg">Contacts</h3>

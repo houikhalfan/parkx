@@ -98,7 +98,7 @@ class AuthController extends Controller
             'role'                  => 'nullable|string|max:100',
         ]);
 
-        Contractor::create([
+        $contractor = Contractor::create([
             'name'         => $validated['name'],
             'email'        => $validated['email'],
             'password'     => bcrypt($validated['password']),
@@ -108,6 +108,12 @@ class AuthController extends Controller
             'is_approved'  => false,
         ]);
 
-        return back()->with('message', 'Registration submitted. Admin approval is required.');
+        // Send notification to all admins
+        $admins = \App\Models\Admin::all();
+        foreach ($admins as $admin) {
+            $admin->notify(new \App\Notifications\ContractorRegistrationRequest($contractor));
+        }
+
+        return back()->with('message', 'Demande d\'inscription envoyée. Vous serez notifié après approbation par l\'administration.');
     }
 }

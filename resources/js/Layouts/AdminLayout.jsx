@@ -1,6 +1,7 @@
 // resources/js/Layouts/AdminLayout.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
+<<<<<<< HEAD
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +13,9 @@ import {
   ChevronRight,
   Folder,
 } from "lucide-react";
+=======
+import AdminNotifications from "@/Components/AdminNotifications";
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
 
 export default function AdminLayout({ children }) {
 const { csrf_token, admin } = usePage().props || {};
@@ -114,6 +118,7 @@ const adminEmail = admin?.email ?? "";
             />
           </div>
 
+<<<<<<< HEAD
           {/* Collapse (desktop) */}
           <button
             onClick={() => setCollapsed((v) => !v)}
@@ -132,6 +137,60 @@ const adminEmail = admin?.email ?? "";
           >
             <ChevronLeft size={18} />
           </button>
+=======
+            <Link
+              href={`${route("admin.dashboard")}?tab=parkx`}
+              className={`block px-4 py-1 rounded ${
+                active("^/admin\\?$|^/admin$|^/admin\\?tab=parkx") ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-blue-100"
+              }`}
+            >
+              Comptes ParkX
+            </Link>
+
+            <Link
+              href={route("admin.contractors.pending")}
+              className={`block px-4 py-2 rounded ${
+                active("^/admin/contractors/pending") ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-blue-100"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span>Comptes contractants</span>
+                {usePage().props.pendingCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                    {usePage().props.pendingCount}
+                  </span>
+                )}
+              </div>
+            </Link>
+
+            <Link
+              href={route("admin.signatures.index")}
+              className={`block px-4 py-2 rounded ${
+                active("^/admin/signatures") ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-blue-100"
+              }`}
+            >
+              Signatures
+            </Link>
+
+            <Link
+              href={route("admin.statistics.index")}
+              className={`block px-4 py-2 rounded ${
+                active("^/admin/statistics") ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-blue-100"
+              }`}
+            >
+              Statistiques HSE
+            </Link>
+
+            <Link
+              href={route("admin.documents.index")}
+              className={`block px-4 py-2 rounded ${
+                active("^/admin/documents") ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-blue-100"
+              }`}
+            >
+              Documents
+            </Link>
+          </nav>
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
         </div>
 
         {/* Search (expanded only) */}
@@ -200,6 +259,7 @@ const adminEmail = admin?.email ?? "";
         </div>
       </aside>
 
+<<<<<<< HEAD
       {/* Backdrop for mobile only */}
       {sidebarOpen && (
         <button
@@ -314,6 +374,16 @@ const adminEmail = admin?.email ?? "";
         {/* Page content */}
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
+=======
+      {/* Main */}
+      <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
+        {/* Header with notifications */}
+        <div className="flex justify-end mb-6">
+          <AdminNotifications />
+        </div>
+        {children}
+      </main>
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
     </div>
   );
 }

@@ -178,4 +178,77 @@ class AdminController extends Controller
             'csrf_token'       => csrf_token(),
         ]);
     }
+
+    // Get notifications for admin
+    public function notifications()
+    {
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return response()->json(['notifications' => []]);
+        }
+
+        $admin = Admin::find($adminId);
+        if (!$admin) {
+            return response()->json(['notifications' => []]);
+        }
+
+        $notifications = $admin->notifications()
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        return response()->json(['notifications' => $notifications]);
+    }
+
+    // Mark notification as read
+    public function markNotificationRead($id)
+    {
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $admin = Admin::find($adminId);
+        if (!$admin) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $notification = $admin->notifications()->find($id);
+        if ($notification) {
+            $notification->markAsRead();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    // Mark all notifications as read
+    public function markAllNotificationsRead()
+    {
+        $adminId = session('admin_id');
+        if (!$adminId) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $admin = Admin::find($adminId);
+        if (!$admin) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $admin->unreadNotifications->markAsRead();
+
+        return response()->json(['success' => true]);
+    }
+
+    // Show pending contractors for approval
+    public function pendingContractors()
+    {
+        $pendingContractors = Contractor::where('is_approved', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('Admin/PendingContractors', [
+            'pendingContractors' => $pendingContractors,
+            'csrf_token' => csrf_token(),
+        ]);
+    }
 }

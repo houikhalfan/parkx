@@ -3,6 +3,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { Eye, EyeOff } from 'lucide-react';
 
+import { Link } from "@inertiajs/react";
+
+
+
 const InputField = ({
   label,
   type = 'text',
@@ -91,6 +95,7 @@ export default function Welcome() {
 
   const handleLogin = (e) => {
     e.preventDefault();
+<<<<<<< HEAD
     const payload = {
       email: loginForm.data.email,
       password: loginForm.data.password,
@@ -103,6 +108,40 @@ export default function Welcome() {
       },
       preserveScroll: true,
     });
+=======
+
+    if (activeTab === 'contractor') {
+      // Post to contractor login route
+      router.post('/contractant/login', {
+        email: loginForm.data.email,
+        password: loginForm.data.password,
+      }, {
+        onSuccess: () => {
+          router.visit('/contractant');
+        },
+        onError: (errors) => {
+          // Handle errors
+          console.log('Login errors:', errors);
+        },
+        preserveScroll: true,
+      });
+    } else {
+      // Post to regular ParkX login route
+      router.post('/login', {
+        email: loginForm.data.email,
+        password: loginForm.data.password,
+      }, {
+        onSuccess: () => {
+          router.visit('/dashboard');
+        },
+        onError: (errors) => {
+          // Handle errors
+          console.log('Login errors:', errors);
+        },
+        preserveScroll: true,
+      });
+    }
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
   };
 
   const handleSignup = (e) => {
@@ -129,6 +168,7 @@ export default function Welcome() {
       {/* Dark overlay for contrast */}
       <div className="absolute inset-0 bg-black/45 dark:bg-black/55" />
 
+<<<<<<< HEAD
       {/* FOREGROUND CONTENT */}
       <div className="relative z-10 min-h-screen flex">
         {/* Left hero text (desktop) */}
@@ -137,6 +177,17 @@ export default function Welcome() {
             <h1 className="text-4xl lg:text-5xl font-bold mb-4">Bienvenue sur HSE ParkX</h1>
             <p className="text-lg lg:text-xl">
               Plateforme de supervision et de signalement pour un environnement de travail plus sûr.
+=======
+      {/* Right — Auth panel */}
+      <div className="w-full md:w-1/2 lg:w-1/3 flex items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-md">
+          {/* Logo + Heading */}
+          <div className="mb-5 text-center">
+            <img src="/images/logo.png" alt="logo" className="mx-auto h-12 w-auto mb-6 filter brightness-0 invert" />
+            <h2 className="text-2xl font-bold mb-1">Connexion</h2>
+            <p className="text-gray-500 dark:text-slate-300 text-sm">
+              Connectez-vous en tant qu’utilisateur ou contractant
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
             </p>
           </div>
         </div>
@@ -155,6 +206,7 @@ export default function Welcome() {
                 </p>
               </div>
 
+<<<<<<< HEAD
               {/* Tabs */}
               <div
                 className="flex bg-white/70 dark:bg-slate-900/40 rounded-lg p-1 mb-4 border border-white/50 dark:border-slate-700/50"
@@ -170,6 +222,122 @@ export default function Welcome() {
                       : 'text-gray-700 dark:text-slate-300'
                   }`}
                   onClick={() => { setActiveTab('parkx'); setShowSignup(false); }}
+=======
+          {/* Flash message */}
+          {flashMessage && (
+            <div className="mb-4 px-4 py-2 text-green-800 bg-green-100 border border-green-200 rounded text-center dark:text-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800">
+              {flashMessage}
+            </div>
+          )}
+
+          {/* Login / Signup */}
+          {!showSignup ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <InputField
+                label="Adresse e-mail"
+                type="email"
+                name="email"
+                value={loginForm.data.email}
+                onChange={(val) => loginForm.setData('email', val)}
+                autoComplete="username"
+                placeholder="Entrez votre adresse email"
+                error={loginForm.errors?.email}
+              />
+              <InputField
+                label="Mot de passe"
+                name="password"
+                value={loginForm.data.password}
+                onChange={(val) => loginForm.setData('password', val)}
+                showToggle
+                show={showLoginPassword}
+                onToggle={() => setShowLoginPassword((s) => !s)}
+                autoComplete="current-password"
+                placeholder="Entrez votre mot de passe"
+                error={loginForm.errors?.password}
+              />
+
+              <button
+                type="submit"
+                disabled={loginForm.processing}
+                className="w-full py-3 rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loginForm.processing ? 'Connexion…' : 'Se connecter'}
+              </button>
+
+              {loginForm.errors?.type && (
+                <p className="text-xs text-red-600 text-center mt-2">{loginForm.errors.type}</p>
+              )}
+            </form>
+          ) : (
+            <form onSubmit={handleSignup} className="space-y-4">
+              <InputField
+                label="Nom complet"
+                name="name"
+                value={signupForm.data.name}
+                onChange={(val) => signupForm.setData('name', val)}
+                autoComplete="name"
+                placeholder="Entrez votre nom complet"
+                error={signupForm.errors?.name}
+              />
+              <InputField
+                label="Email"
+                type="email"
+                name="email"
+                value={signupForm.data.email}
+                onChange={(val) => signupForm.setData('email', val)}
+                autoComplete="email"
+                placeholder="Entrez votre adresse email"
+                error={signupForm.errors?.email}
+              />
+              <InputField
+                label="Mot de passe"
+                name="password"
+                value={signupForm.data.password}
+                onChange={(val) => signupForm.setData('password', val)}
+                showToggle
+                show={showSignupPassword}
+                onToggle={() => setShowSignupPassword((s) => !s)}
+                autoComplete="new-password"
+                placeholder="Entrez votre mot de passe"
+                error={signupForm.errors?.password}
+              />
+              <InputField
+                label="Confirmer le mot de passe"
+                name="password_confirmation"
+                value={signupForm.data.password_confirmation}
+                onChange={(val) => signupForm.setData('password_confirmation', val)}
+                showToggle
+                show={showSignupConfirm}
+                onToggle={() => setShowSignupConfirm((s) => !s)}
+                autoComplete="new-password"
+                placeholder="Confirmez votre mot de passe"
+                error={signupForm.errors?.password_confirmation}
+              />
+              <InputField
+                label="Téléphone"
+                name="phone"
+                value={signupForm.data.phone}
+                onChange={(val) => signupForm.setData('phone', val)}
+                autoComplete="tel"
+                placeholder="Entrez votre numéro de téléphone"
+                error={signupForm.errors?.phone}
+              />
+              <InputField
+                label="Entreprise"
+                name="company_name"
+                value={signupForm.data.company_name}
+                onChange={(val) => signupForm.setData('company_name', val)}
+                placeholder="Entrez le nom de votre entreprise"
+                error={signupForm.errors?.company_name}
+              />
+
+              <div>
+                <label className="text-sm text-gray-700 dark:text-slate-200 font-medium">Rôle</label>
+                <select
+                  value={signupForm.data.role}
+                  onChange={(e) => signupForm.setData('role', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
                 >
                   ParkX
                 </button>

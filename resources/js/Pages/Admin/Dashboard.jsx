@@ -30,6 +30,37 @@ function AdminDashboard() {
 
   return (
     <div>
+<<<<<<< HEAD
+=======
+      {/* --- Tabs header --- */}
+      <div className="mb-6 flex items-center gap-2">
+        <Link
+          href={`${route("admin.dashboard")}?tab=parkx`}
+          className={`px-3 py-1.5 rounded ${
+            activeTab === "parkx" ? "bg-blue-600 text-white" : "bg-white border"
+          }`}
+        >
+          Comptes ParkX
+        </Link>
+        <Link
+          href={route("admin.contractors.pending")}
+          className={`px-3 py-1.5 rounded ${
+            activeTab === "contractors" ? "bg-blue-600 text-white" : "bg-white border"
+          }`}
+        >
+          Comptes contractants
+        </Link>
+        <Link
+          href={`${route("admin.dashboard")}?tab=documents`}
+          className={`px-3 py-1.5 rounded ${
+            activeTab === "documents" ? "bg-blue-600 text-white" : "bg-white border"
+          }`}
+        >
+          Documents
+        </Link>
+      </div>
+
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
       {/* --- PARKX USERS TAB --- */}
       {activeTab === "parkx" && (
         <>
@@ -283,6 +314,52 @@ function AdminDashboard() {
               </table>
             </div>
           )}
+        </>
+      )}
+
+      {/* --- DOCUMENTS TAB --- */}
+      {activeTab === "documents" && (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold">Gestion des Documents</h2>
+            <Link
+              href={route("admin.documents.create")}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              + Nouveau Document
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-gray-600 mb-4">
+              Gérez vos documents et contrôlez leur visibilité. Les documents publics sont accessibles à tous les utilisateurs, 
+              tandis que les documents privés ne sont visibles que par les administrateurs.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="text-blue-600 font-semibold text-lg">Documents</div>
+                <div className="text-blue-800 text-sm">Gestion complète des fichiers</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="text-green-600 font-semibold text-lg">Visibilité</div>
+                <div className="text-green-800 text-sm">Contrôle d'accès public/privé</div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="text-purple-600 font-semibold text-lg">Organisation</div>
+                <div className="text-purple-800 text-sm">Catégorisation et recherche</div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Link
+                href={route("admin.documents.index")}
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Accéder à la Gestion des Documents
+              </Link>
+            </div>
+          </div>
         </>
       )}
     </div>

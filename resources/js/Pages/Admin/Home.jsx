@@ -18,6 +18,7 @@ function AdminHome() {
     stats.vods_due > 0 ? Math.round((stats.vods_done / stats.vods_due) * 100) : 0;
 
   return (
+<<<<<<< HEAD
     /* White page background */
     <div className="-m-4 md:-m-8 bg-white min-h-[calc(100vh-3.5rem)] p-4 md:p-8">
       {/* Header */}
@@ -36,6 +37,16 @@ function AdminHome() {
             <path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           Générer un rapport
+=======
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Bienvenue, Admin 👋</h1>
+        <Link
+          href={`${route("admin.dashboard")}?tab=parkx`}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Gérer les utilisateurs ParkX
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
         </Link>
       </div>
 
@@ -56,6 +67,7 @@ function AdminHome() {
         />
       </section>
 
+<<<<<<< HEAD
       {/* Two columns */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {/* Activité récente */}
@@ -63,6 +75,17 @@ function AdminHome() {
           <h2 className="text-lg font-semibold text-gray-900 mb-1">Activité récente</h2>
           <p className="text-sm text-gray-600 mb-4">Dernières connexions des utilisateurs</p>
 
+=======
+      {/* Rows */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold">Connexions récentes</h2>
+            <Link href={`${route("admin.dashboard")}?tab=parkx`} className="text-sm text-blue-600 hover:underline">
+              Gérer les utilisateurs
+            </Link>
+          </div>
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
           {recentLogins.length === 0 ? (
             <p className="text-sm text-gray-600">Aucune connexion récente.</p>
           ) : (
@@ -84,9 +107,17 @@ function AdminHome() {
             </ul>
           )}
 
+<<<<<<< HEAD
           <div className="mt-4 text-right">
             <Link href={route("admin.dashboard")} className="text-sm font-medium hover:underline">
               Gérer les utilisateurs
+=======
+        <div className="bg-white border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold">Approbations en attente</h2>
+            <Link href={route("admin.contractors.pending")} className="text-sm text-blue-600 hover:underline">
+              Voir tout
+>>>>>>> 4b01387 (Documents Complete & Statistiques Without DASH)
             </Link>
           </div>
         </div>
